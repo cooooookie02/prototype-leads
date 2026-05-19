@@ -1,0 +1,2600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeadClaw · 客户管理</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  * { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Inter', sans-serif; }
+  body { background:#f5f5f5; }
+
+  /* ---- 侧边栏 ---- */
+  .sidebar { background:#fff; width:168px; min-height:100vh; display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid #ebebeb; }
+  .sidebar-logo { padding:14px 14px 12px; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; gap:8px; }
+  .sidebar-logo-icon { width:26px; height:26px; background:#18a058; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+  .sidebar-section-label { font-size:10px; color:#b0b0b0; padding:14px 14px 4px; letter-spacing:.06em; font-weight:600; }
+  .nav-item { display:flex; align-items:center; gap:8px; padding:7px 12px; margin:1px 6px; border-radius:7px; font-size:12px; cursor:pointer; color:#666; transition:all .15s; }
+  .nav-item:hover { background:#f5f5f5; color:#333; }
+  .nav-item.active { background:#f0f0f0; color:#1a1a1a; font-weight:600; }
+  .nav-item.active svg { color:#1a1a1a; }
+  .new-task-btn { margin:12px 10px 6px; background:#1a1a1a; color:#fff; border-radius:8px; padding:8px 12px; font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; }
+  .new-task-btn:hover { background:#333; }
+
+  /* ---- 主内容 ---- */
+  .main { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+  .topbar { background:#fff; padding:14px 20px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between; }
+
+  /* ---- 统计卡片 ---- */
+  .stat-card { background:#fff; border-radius:10px; padding:14px 16px; flex:1; min-width:0; cursor:pointer; transition:all .15s; border:1.5px solid transparent; }
+  .stat-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); }
+  .stat-card.active { border-color:#18a058; box-shadow:0 0 0 3px rgba(34,197,94,.1); }
+  .stat-delta-pos { color:#6b7280; font-size:12px; font-weight:500; }
+  .stat-delta-neg { color:#6b7280; font-size:12px; font-weight:500; }
+  .stat-badge-green { background:#f3f4f6; color:#6b7280; font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600; }
+  .stat-badge-red { background:#f3f4f6; color:#6b7280; font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600; }
+  .stat-badge-gray { background:#f3f4f6; color:#6b7280; font-size:10px; padding:2px 7px; border-radius:20px; font-weight:600; }
+  .go-btn { display:inline-flex; align-items:center; gap:2px; font-size:11px; color:#18a058; cursor:pointer; white-space:nowrap; }
+  .go-btn:hover { text-decoration:underline; }
+
+  /* ---- AI 洞察 ---- */
+  .insight-card { background:#fff; border-radius:10px; padding:14px 16px; }
+  .insight-item { flex:1; border:1px solid #e5e7eb; border-radius:8px; padding:12px; cursor:pointer; transition:all .15s; }
+  .insight-item:hover { border-color:#18a058; background:#f0fdf4; }
+
+  /* ---- 筛选栏 ---- */
+  .filter-select { border:1px solid #e5e7eb; border-radius:8px; padding:6px 10px; font-size:12px; background:#fff; color:#333; cursor:pointer; outline:none; min-width:80px; }
+  .filter-select:focus { border-color:#18a058; }
+  .filter-input { border:1px solid #e5e7eb; border-radius:8px; padding:6px 12px; font-size:12px; background:#fff; outline:none; flex:1; min-width:200px; }
+  .filter-input:focus { border-color:#18a058; }
+  .date-input { border:1px solid #e5e7eb; border-radius:8px; padding:6px 10px; font-size:12px; background:#fff; color:#555; cursor:pointer; outline:none; }
+  .date-input:focus { border-color:#18a058; }
+  ._quick-btn { font-size:12px;color:#555;border:1px solid #e5e7eb;border-radius:6px;padding:3px 10px;background:#fafafa;cursor:pointer; }
+  ._quick-btn:hover { background:#f3f4f6;border-color:#d1d5db; }
+  .filter-btn { border:1px solid #e5e7eb; border-radius:8px; padding:6px 12px; font-size:12px; background:#fff; color:#555; cursor:pointer; display:flex; align-items:center; gap:4px; }
+  .filter-btn:hover { background:#f5f5f5; }
+  
+  .card-date-sel { font-size:11px; color:#888; border:1px solid #e5e7eb; border-radius:6px; padding:2px 4px; background:#fff; cursor:pointer; outline:none; }
+  .def-tip { font-size:11px; color:#aaa; cursor:default; margin-left:3px; position:relative; }
+  .def-tip:hover::after { content: attr(data-tip); position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 6px); background:#1a1a1a; color:#fff; font-size:11px; white-space:nowrap; padding:5px 9px; border-radius:6px; z-index:999; pointer-events:none; line-height:1.5; }
+  .def-tip:hover::before { content:''; position:absolute; left:50%; transform:translateX(-50%); top:calc(100% + 1px); border:4px solid transparent; border-bottom-color:#1a1a1a; z-index:999; }
+  .card-period-pill { display:inline-flex; border:1px solid #e5e7eb; border-radius:6px; overflow:hidden; }
+  .pill-opt { font-size:11px; color:#888; padding:2px 7px; cursor:pointer; background:#fff; white-space:nowrap; transition:background .15s,color .15s; }
+  .pill-opt:hover { background:#f5f5f5; }
+  .pill-active { background:#1a1a1a !important; color:#fff !important; }
+
+  /* ---- 表格 ---- */
+  .table-header { background:#f9fafb; display:grid; padding:8px 16px; font-size:11px; color:#9ca3af; font-weight:500; border-bottom:1px solid #f0f0f0; }
+  .table-row { display:grid; padding:10px 16px; font-size:12px; color:#333; border-bottom:1px solid #f9f9f9; align-items:center; transition:background .1s; }
+  .table-row:hover { background:#fafafa; }
+  .tag-pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap; }
+  .tag-green { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+  .tag-gray { background:#f3f4f6; color:#4b5563; border:1px solid #e5e7eb; }
+  .tag-yellow { background:#fef9c3; color:#854d0e; border:1px solid #fde68a; }
+  .tag-red { background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; }
+  .tag-blue { background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; }
+  .tag-purple { background:#f3e8ff; color:#7e22ce; border:1px solid #e9d5ff; }
+  .action-btn { font-size:11px; color:#1a1a1a; cursor:pointer; padding:3px 6px; border-radius:6px; }
+  .action-btn:hover { background:#f5f5f5; color:#000; }
+  .action-btn-gray { font-size:11px; color:#555; cursor:pointer; padding:3px 8px; border-radius:6px; border:1px solid #e5e7eb; }
+  .action-btn-gray:hover { background:#f5f5f5; }
+
+  /* ---- 侧边面板（抽屉）---- */
+  .side-panel { position:fixed; top:0; right:0; height:100vh; background:#fff; box-shadow:-4px 0 24px rgba(0,0,0,.12); z-index:300; display:flex; flex-direction:column; transition:transform .28s cubic-bezier(.23,1,.32,1); }
+  .panel-mask { position:fixed; inset:0; background:rgba(0,0,0,.25); z-index:299; }
+
+  /* ---- 开关 ---- */
+  .toggle { position:relative; display:inline-block; width:30px; height:16px; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; cursor:pointer; inset:0; background:#d1d5db; border-radius:16px; transition:.2s; }
+  .slider::before { position:absolute; content:""; height:11px; width:11px; left:2.5px; bottom:2.5px; background:#fff; border-radius:50%; transition:.2s; }
+  input:checked+.slider { background:#18a058; }
+  input:checked+.slider::before { transform:translateX(14px); }
+
+  /* ---- 颜色选择 ---- */
+  .cdot { width:18px; height:18px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all .15s; flex-shrink:0; }
+  .cdot.sel { border-color:#18a058; box-shadow:0 0 0 2px rgba(34,197,94,.25); transform:scale(1.15); }
+
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-thumb { background:#e0e0e0; border-radius:4px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #toast { transition:all .2s; }
+
+  /* 私信状态点 */
+  .status-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+  /* 底部分页条 */
+  .table-footer { background:#fff; border-top:1px solid #f0f0f0; padding:10px 16px; display:flex; align-items:center; font-size:12px; color:#888; }
+
+  /* 回传提示 */
+  .return-tip { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#f59e0b; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:2px 8px; cursor:pointer; }
+  .return-tip:hover { background:#fef3c7; }
+</style>
+</head>
+<body class="flex" style="height:100vh;overflow:hidden;">
+
+<!-- ============ 侧边栏 ============ -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">
+      <svg style="width:16px;height:16px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <div>
+      <div style="color:#1a1a1a;font-size:13px;font-weight:700;">LeadClaw</div>
+      <div style="color:#aaa;font-size:10px;">AI经营工作台</div>
+    </div>
+  </div>
+
+  <div style="padding:10px 10px 6px;">
+    <div class="new-task-btn">
+      <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>新建任务
+    </div>
+  </div>
+
+  <div class="nav-item" style="margin-top:4px;">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>智能工具
+  </div>
+
+  <div class="sidebar-section-label">经营管理</div>
+  <div class="nav-item active">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>客户管理
+  </div>
+  <div class="nav-item">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>经营工具
+  </div>
+
+  <div class="sidebar-section-label">私信工具</div>
+  <div class="nav-item">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>私信通
+  </div>
+  <div class="nav-item">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>私信经营工具箱
+  </div>
+  <div class="nav-item">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>获客工具
+  </div>
+  <div class="nav-item">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zm12 0a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>私信服务组件
+  </div>
+  <div class="nav-item">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>私信咨询分
+  </div>
+  <div class="nav-item">
+    <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>三方客服工具
+  </div>
+
+  <div style="flex:1;"></div>
+  <div style="padding:10px 12px 14px;border-top:1px solid #f0f0f0;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:28px;height:28px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:11px;">管</div>
+      <div><div style="color:#1a1a1a;font-size:12px;">管理员</div><div style="color:#aaa;font-size:10px;">免费版</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 主内容 ============ -->
+<div class="main">
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div style="font-size:16px;font-weight:700;color:#1a1a1a;">客户管理</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="openExportPanel()" style="font-size:12px;" class="filter-btn">
+        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>导出数据
+      </button>
+      <button onclick="openTagSettings()" style="font-size:12px;" class="filter-btn">
+        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>标签设置
+      </button>
+      <button onclick="openAI()" style="font-size:12px;background:#1a1a1a;color:#fff;border-radius:8px;padding:7px 14px;display:flex;align-items:center;gap:6px;cursor:pointer;" class="hover:opacity-90">
+        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>AI 助手
+      </button>
+    </div>
+  </div>
+
+  <!-- 滚动区 -->
+  <div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+
+    <!-- 统计卡片 -->
+    <div style="display:flex;gap:12px;">
+      <!-- 开口客户 -->
+      <div class="stat-card" id="card-0" onclick="filterByCard(0)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:#666;">开口客户<span class="def-tip" data-tip="进线后主动发起私信沟通的客户">ⓘ</span></span>
+          <span class="stat-badge-green" id="card-badge-0">+12%</span>
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#1a1a1a;line-height:1;" id="card-num-0">128</div>
+        <div class="stat-delta-pos" style="margin-top:6px;" id="card-delta-0">较上周增长 15人</div>
+      </div>
+      <!-- 潜在客户 -->
+      <div class="stat-card" id="card-1" onclick="filterByCard(1)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:#666;">潜在客户<span class="def-tip" data-tip="未进线，但关注您或在笔记下评论的客户">ⓘ</span></span>
+          <span class="stat-badge-green" id="card-badge-1">+8%</span>
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#1a1a1a;line-height:1;" id="card-num-1">342</div>
+        <div class="stat-delta-pos" style="margin-top:6px;" id="card-delta-1">较上周增长 26人</div>
+      </div>
+      <!-- 留资客户 -->
+      <div class="stat-card" id="card-2" onclick="filterByCard(2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:#666;">留资客户<span class="def-tip" data-tip="已完成留资的客户，含有真实联系方式的线索及个微复制、唤端等留资行为">ⓘ</span></span>
+          <span class="stat-badge-green" id="card-badge-2">+5%</span>
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#1a1a1a;line-height:1;" id="card-num-2">214</div>
+        <div class="stat-delta-pos" style="margin-top:6px;" id="card-delta-2">较上周增长 11人</div>
+      </div>
+      <!-- 转化客户 -->
+      <div class="stat-card" id="card-3" onclick="filterByCard(3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:#666;">转化客户<span class="def-tip" data-tip="留资后有预约、进店、付费记录的客户">ⓘ</span></span>
+          <span class="stat-badge-red" id="card-badge-3">-5%</span>
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#1a1a1a;line-height:1;" id="card-num-3">67</div>
+        <div class="stat-delta-neg" style="margin-top:6px;" id="card-delta-3">较上周减少 3人</div>
+        <!-- 回传提示（T-1无数据时显示） -->
+        <div style="margin-top:8px;">
+          <span onclick="event.stopPropagation();openReturnPanel()" class="return-tip">
+            ❕ 及时更新转化数据，解锁更深经营分析与更优投放效果，去回传 →
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 卡片激活提示条（已隐藏，改为重置按钮高亮引导） -->
+    <div id="cardFilterBar" style="display:none;">
+      <strong id="cardFilterLabel"></strong>
+    </div>
+
+    <!-- AI 智能洞察（最高优诊断问题，单行展示） -->
+    <div class="insight-card" style="padding:12px 16px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:28px;height:28px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg style="width:14px;height:14px;color:#18a058;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;">AI 智能洞察</div>
+        <!-- 最高优诊断问题（一句话） -->
+        <div style="flex:1;font-size:12px;color:#555;border-left:1px solid #e5e7eb;padding-left:12px;margin-left:4px;">
+          ⚠️ <strong>流失风险预警</strong>：发现 <span style="color:#f59e0b;font-weight:600;">23 位客户</span>有流失风险，建议本周内发起唤醒话术。
+        </div>
+        <button onclick="openAIWithReport()" style="flex-shrink:0;font-size:12px;color:#18a058;border:1px solid #bbf7d0;border-radius:7px;padding:5px 14px;background:#f0fdf4;cursor:pointer;white-space:nowrap;" class="hover:bg-green-100">查看更多建议 →</button>
+      </div>
+    </div>
+
+    <!-- 筛选栏 (按PRD: 客户行为 / 行为时间 / 客户标签 / 搜索框 / 更多筛选) -->
+    <div style="background:#fff;border-radius:10px;padding:12px 16px;display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <!-- 客户行为 -->
+        <select class="filter-select" id="fs-behavior" onchange="renderList()">
+          <option value="">全部客户行为</option>
+          <option>进线</option><option>开口</option><option>留资</option><option>评论</option><option>关注</option>
+        </select>
+        <!-- 行为时间 -->
+        <div style="position:relative;display:inline-block;" id="datePickerWrap">
+          <!-- 触发按钮：未选时显示"行为时间"，已选时显示区间 -->
+          <button id="datePickerTrigger" onclick="toggleDatePicker(event)"
+            class="filter-select"
+            style="min-width:110px;display:flex;align-items:center;gap:6px;cursor:pointer;background:#fff;text-align:left;white-space:nowrap;">
+            <svg style="width:13px;height:13px;flex-shrink:0;color:#aaa;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span id="datePickerLabel" style="font-size:12px;color:#888;">行为时间</span>
+          </button>
+          <!-- 日历弹层 -->
+          <div id="datePickerPanel" style="display:none;position:absolute;top:36px;left:0;z-index:300;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);padding:16px 18px 14px;min-width:560px;">
+            <div style="display:flex;gap:28px;">
+              <div id="calLeft" style="flex:1;"></div>
+              <div id="calRight" style="flex:1;"></div>
+            </div>
+            <!-- 快捷选项 + 已选范围 + 确定 -->
+            <div style="border-top:1px solid #f0f0f0;margin-top:10px;padding-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span id="dateRangeLabel" style="font-size:12px;color:#888;flex:1;min-width:140px;"></span>
+              <button onclick="applyDatePresetQuick('today')" class="_quick-btn">今天</button>
+              <button onclick="applyDatePresetQuick('yesterday')" class="_quick-btn">昨天</button>
+              <button onclick="applyDatePresetQuick('7d')" class="_quick-btn">最近7天</button>
+              <button onclick="applyDatePresetQuick('14d')" class="_quick-btn">最近14天</button>
+              <button onclick="applyDatePresetQuick('30d')" class="_quick-btn">最近30天</button>
+              <button onclick="confirmDatePicker()" style="font-size:12px;background:#1a1a1a;color:#fff;border-radius:6px;padding:4px 16px;cursor:pointer;border:none;margin-left:6px;">确定</button>
+            </div>
+          </div>
+        </div>
+        <!-- 隐藏的日期值 -->
+        <input type="hidden" id="fs-date-s">
+        <input type="hidden" id="fs-date-e">
+        <!-- 客户标签 -->
+        <select class="filter-select" id="fs-tag" onchange="renderList()">
+          <option value="">全部客户标签</option>
+          <option>进线客户</option><option>开口客户</option><option>潜在客户</option><option>留资客户</option><option>流失客户</option><option>转化客户</option>
+          <option>高意向未成交</option><option>KOS转介绍</option><option>已到店</option><option>VIP客户</option>
+        </select>
+        <!-- 搜索框 -->
+        <input class="filter-input" id="fs-search" placeholder="搜索客户名称/手机号/ID" style="max-width:210px;">
+        <!-- 更多筛选 -->
+        <button class="filter-btn" onclick="toggleMoreFilter(this)">
+          <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+          更多筛选
+        </button>
+        <button id="resetBtn" class="filter-btn" onclick="resetFilter()" style="transition:background .15s,border-color .15s,color .15s;">
+          <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          重置
+        </button>
+      </div>
+      <!-- 更多筛选展开区（下拉框） -->
+      <div id="moreFilterRow" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px;">
+        <span style="font-size:12px;color:#888;white-space:nowrap;">更多筛选：</span>
+        <select class="filter-select" id="mf-convert" onchange="renderList()">
+          <option value="">全部转化结果</option>
+          <option>预约</option><option>成交</option><option>未填写</option>
+        </select>
+        <select class="filter-select" id="mf-account" onchange="renderList()">
+          <option value="">全部归属账号</option>
+          <option>薯店-小红书</option><option>薯店-广告</option>
+        </select>
+        <select class="filter-select" id="mf-traffictype" onchange="renderList()">
+          <option value="">全部流量类型</option>
+          <option>广告流量</option><option>自然流量</option>
+        </select>
+        <select class="filter-select" id="mf-leadtype" onchange="renderList()">
+          <option value="">全部留资方式</option>
+          <option>私信留资</option><option>客服打标</option><option>留资卡</option><option>企微名片</option><option>落地页</option><option>预约组件</option><option>个微名片</option><option>交易卡</option><option>落地页_直播间</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 客户列表 -->
+    <div style="background:#fff;border-radius:10px;overflow:hidden;">
+      <div style="overflow-x:auto;"><div style="min-width:1800px;">
+      <div class="table-header" style="grid-template-columns:36px 1.6fr 1.5fr 1fr 1.3fr 1.3fr 1.3fr 0.8fr 1fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;">
+        <div style="display:flex;align-items:center;justify-content:center;">
+          <input type="checkbox" id="checkAll" onchange="toggleCheckAll(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#1a1a1a;">
+        </div>
+        <div>用户昵称</div><div>用户ID</div><div>归属账号</div><div>最新进线时间</div><div>最近开口时间</div><div>最近留资时间</div><div>留资次数</div><div>流量类型</div><div>客户标签</div><div>转化结果</div><div>电话</div><div>微信</div><div>留资方式</div><div>备注</div><div>操作</div>
+      </div>
+      <div id="custList"></div>
+      </div></div>
+      <!-- 底部分页 + 轮播提示 -->
+      <div style="background:#fff;border-top:1px solid #f0f0f0;">
+        <div class="table-footer">
+          <span>第 1 页，共 2 页</span>
+          <!-- 轮播区 -->
+          <div style="margin-left:20px;position:relative;height:18px;overflow:hidden;flex:1;max-width:420px;">
+            <div id="carousel-0" class="carousel-item" onclick="openAI()" style="position:absolute;top:0;left:0;width:100%;font-size:12px;color:#f59e0b;cursor:pointer;opacity:1;transition:opacity 0.5s;white-space:nowrap;">
+              对数据有疑问、想看分析结果？去问问 AI 小助手 →
+            </div>
+            <div id="carousel-1" class="carousel-item" onclick="openReturnPanel()" style="position:absolute;top:0;left:0;width:100%;font-size:12px;color:#f59e0b;cursor:pointer;opacity:0;transition:opacity 0.5s;white-space:nowrap;">
+              ❕ 本周还有 12 条线索未回传转化结果，去回传 →
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:4px;">
+            <button class="filter-btn" style="padding:4px 10px;">上一页</button>
+            <button class="filter-btn" style="padding:4px 10px;background:#1a1a1a;color:#fff;border-color:#1a1a1a;">下一页</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ 标签设置抽屉 ============ -->
+<div id="tagMask" class="panel-mask" style="display:none;" onclick="closeTagSettings()"></div>
+<div id="tagPanel" class="side-panel" style="width:440px;transform:translateX(100%);display:flex;flex-direction:column;">
+
+  <!-- 标题行 -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;">
+    <div style="font-size:15px;font-weight:700;color:#1a1a1a;">标签设置</div>
+    <button onclick="closeTagSettings()" style="color:#aaa;cursor:pointer;padding:4px;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#aaa'">
+      <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- Tab 栏（均分居中，同用户明细样式） -->
+  <div style="display:flex;border-bottom:1px solid #f0f0f0;margin-top:12px;">
+    <div id="tpanel-tab-tag" onclick="switchTagPanelTab('tag')"
+      style="flex:1;text-align:center;padding:10px 0;font-size:14px;cursor:pointer;border-bottom:2px solid #18a058;color:#18a058;font-weight:500;">
+      标签管理
+    </div>
+    <div id="tpanel-tab-card" onclick="switchTagPanelTab('card')"
+      style="flex:1;text-align:center;padding:10px 0;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;color:#888;">
+      卡片展示
+    </div>
+  </div>
+
+  <!-- Tab 内容区 -->
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+
+    <!-- 标签管理内容 -->
+    <div id="tpanel-content-tag" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <!-- 搜索 + 新建 -->
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 20px 10px;">
+        <div style="flex:1;display:flex;align-items:center;border:1px solid #e5e7eb;border-radius:8px;padding:6px 10px;gap:6px;">
+          <svg style="width:13px;height:13px;color:#aaa;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input placeholder="搜索标签…" id="tagMgrSearch" oninput="renderTagMgr()" style="font-size:12px;border:none;outline:none;flex:1;color:#1a1a1a;">
+        </div>
+        <button onclick="openCreateTag()" style="flex-shrink:0;background:#1a1a1a;color:#fff;font-size:12px;border-radius:8px;padding:7px 14px;cursor:pointer;white-space:nowrap;">+ 新建标签</button>
+      </div>
+      <!-- 标签列表（行样式同用户明细） -->
+      <div id="tagMgrList" style="flex:1;overflow-y:auto;padding:0 20px 16px;display:flex;flex-direction:column;"></div>
+    </div>
+
+    <!-- 卡片展示内容（默认隐藏） -->
+    <div id="tpanel-content-card" style="flex:1;display:none;flex-direction:column;overflow:hidden;">
+      <div style="padding:14px 20px 8px;">
+        <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:4px;gap:6px;">
+          <span style="font-size:12px;color:#666;">数据对比周期</span>
+          <div class="card-period-pill">
+            <span id="global-pill-1d" onclick="onGlobalPeriodChange('近1天')" class="pill-opt pill-active">近1天</span><span id="global-pill-1w" onclick="onGlobalPeriodChange('近7天')" class="pill-opt">近7天</span><span id="global-pill-1m" onclick="onGlobalPeriodChange('近30天')" class="pill-opt">近30天</span><span id="global-pill-cus" onclick="onGlobalPeriodChange('自定义')" class="pill-opt">自定义</span>
+          </div>
+        </div>
+      </div>
+      <!-- 已有卡片 -->
+      <div style="padding:0 20px 4px;font-size:11px;color:#aaa;font-weight:500;">已展示</div>
+      <div id="activeCardList" style="padding:0 20px;display:flex;flex-direction:column;gap:1px;"></div>
+      <!-- 分割线 -->
+      <div style="border-top:1px dashed #e5e7eb;margin:12px 20px;"></div>
+      <div style="padding:0 20px 4px;font-size:11px;color:#aaa;font-weight:500;">可添加</div>
+      <div id="inactiveCardList" style="flex:1;overflow-y:auto;padding:0 20px 16px;display:flex;flex-direction:column;gap:1px;"></div>
+    </div>
+
+  </div>
+
+  <!-- 底部操作栏 -->
+  <div style="padding:12px 20px;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:8px;">
+    <button onclick="closeTagSettings()" class="filter-btn" style="padding:7px 16px;">取消</button>
+    <button onclick="saveTagSettings()" style="background:#1a1a1a;color:#fff;font-size:12px;border-radius:8px;padding:7px 18px;cursor:pointer;">保存</button>
+  </div>
+</div>
+
+
+<!-- ============ AI 对话面板 ============ -->
+<div id="aiMask" class="panel-mask" style="display:none;" onclick="closeAI()"></div>
+<div id="aiPanel" class="side-panel" style="width:360px;transform:translateX(100%);">
+  <div style="background:#fff;padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;background:#18a058;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg style="width:16px;height:16px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      </div>
+      <div>
+        <div style="color:#1a1a1a;font-size:14px;font-weight:700;">AI 经营助手</div>
+        
+      </div>
+    </div>
+    <button onclick="closeAI()" style="color:#aaa;cursor:pointer;padding:2px;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#aaa'"><svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+  </div>
+  <!-- 快捷问题 -->
+  <div style="padding:10px 14px;background:#f9fafb;border-bottom:1px solid #f0f0f0;">
+    <div style="font-size:11px;color:#aaa;margin-bottom:6px;">快捷问题</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <button onclick="sendQuick('近7天哪类客户增长最快？')" style="font-size:11px;border:1px solid #e5e7eb;border-radius:20px;padding:3px 10px;background:#fff;color:#555;cursor:pointer;" class="hover:border-green-400 hover:text-green-600">增长趋势分析</button>
+      <button onclick="sendQuick('流失风险名单有哪些客户？')" style="font-size:11px;border:1px solid #e5e7eb;border-radius:20px;padding:3px 10px;background:#fff;color:#555;cursor:pointer;" class="hover:border-green-400 hover:text-green-600">查流失风险名单</button>
+      <button onclick="sendQuick('本周转化机会客户有哪些？')" style="font-size:11px;border:1px solid #e5e7eb;border-radius:20px;padding:3px 10px;background:#fff;color:#555;cursor:pointer;" class="hover:border-green-400 hover:text-green-600">转化机会</button>
+      <button onclick="sendQuick('如何做好数据回传？')" style="font-size:11px;border:1px solid #e5e7eb;border-radius:20px;padding:3px 10px;background:#fff;color:#555;cursor:pointer;" class="hover:border-green-400 hover:text-green-600">数据回传指导</button>
+      <button onclick="sendQuick('这里的数据口径是怎么定义的？')" style="font-size:11px;border:1px solid #e5e7eb;border-radius:20px;padding:3px 10px;background:#fff;color:#555;cursor:pointer;" class="hover:border-green-400 hover:text-green-600">数据口径问题查询</button>
+    </div>
+  </div>
+  <div id="chatMessages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;"></div>
+  <div style="padding:10px 14px;border-top:1px solid #f0f0f0;">
+    <div style="display:flex;align-items:center;gap:8px;border:1.5px solid #e5e7eb;border-radius:10px;padding:8px 12px;">
+      <input id="chatInput" placeholder="问我任何关于客户的问题…" style="flex:1;font-size:12px;border:none;outline:none;" onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" style="width:26px;height:26px;background:#1a1a1a;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;">
+        <svg style="width:12px;height:12px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ 回传引导面板 ============ -->
+<div id="retMask" class="panel-mask" style="display:none;" onclick="closeReturnPanel()"></div>
+<div id="retPanel" class="side-panel" style="width:360px;transform:translateX(100%);">
+  <div style="padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#1a1a1a;">数据回传</div>
+      <div style="font-size:11px;color:#aaa;margin-top:2px;">将转化数据同步至广告平台</div>
+    </div>
+    <button onclick="closeReturnPanel()" style="color:#aaa;cursor:pointer;"><svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:16px;">
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#92400e;">
+      ❕ 本周有 <strong>12 条</strong>线索未更新转化结果，及时回传可提升广告投放精准度
+    </div>
+    <div style="font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:10px;">选择回传方式</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div onclick="selectReturnMethod('excel')" id="ret-excel" style="border:1.5px solid #18a058;border-radius:10px;padding:12px 14px;cursor:pointer;background:#f0fdf4;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;background:#dcfce7;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:16px;height:16px;color:#15803d;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#1a1a1a;">Excel 上传</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">上传含转化数据的 Excel / CSV 文件</div>
+          </div>
+          <div class="ret-chk" style="margin-left:auto;width:16px;height:16px;background:#18a058;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:10px;height:10px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          </div>
+        </div>
+      </div>
+      <div onclick="selectReturnMethod('api')" id="ret-api" style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:16px;height:16px;color:#6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#1a1a1a;">API 对接</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">通过 API 自动同步转化事件</div>
+          </div>
+          <div class="ret-chk" style="margin-left:auto;width:16px;height:16px;background:#18a058;border-radius:50%;display:none;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:10px;height:10px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          </div>
+        </div>
+      </div>
+      <div onclick="selectReturnMethod('manual')" id="ret-manual" style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:32px;height:32px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:16px;height:16px;color:#6b7280;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#1a1a1a;">手动标注</div>
+            <div style="font-size:11px;color:#666;margin-top:2px;">在客户列表逐条填写转化结果</div>
+          </div>
+          <div class="ret-chk" style="margin-left:auto;width:16px;height:16px;background:#18a058;border-radius:50%;display:none;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:10px;height:10px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Excel 方式展开 -->
+    <div id="ret-excel-detail" style="margin-top:12px;">
+      <!-- 上传区（主体） -->
+      <label id="excelUploadZone" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #d1d5db;border-radius:12px;padding:22px 16px;cursor:pointer;background:#fafafa;transition:all .15s;"
+        onmouseover="this.style.borderColor='#18a058';this.style.background='#f0fdf4'"
+        onmouseout="this.style.borderColor='#d1d5db';this.style.background='#fafafa'">
+        <input type="file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(this)">
+        <div style="width:40px;height:40px;background:#e5e7eb;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+          <svg style="width:20px;height:20px;color:#9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:13px;font-weight:500;color:#1a1a1a;">点击选择文件，或拖拽至此处</div>
+          <div style="font-size:12px;color:#aaa;margin-top:2px;">支持 .xlsx / .xls / .csv 格式</div>
+        </div>
+      </label>
+      <!-- 模板提示（低调小字） -->
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:0 2px;">
+        <svg style="width:12px;height:12px;color:#f59e0b;flex-shrink:0;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        <span style="font-size:11px;color:#888;">使用官方模板可提高解析成功率</span>
+        <button onclick="toast('模板下载中…')" style="font-size:11px;color:#18a058;cursor:pointer;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">下载模板</button>
+      </div>
+      <!-- 解析结果区 -->
+      <div id="ret-parse-result" style="display:none;margin-top:10px;"></div>
+    </div>
+
+    <!-- API 方式展开 -->
+    <div id="ret-api-detail" style="display:none;margin-top:12px;background:#f9fafb;border-radius:10px;padding:12px 14px;">
+      <div style="font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:8px;">通过 API 自动同步转化事件</div>
+      <div style="font-size:12px;color:#555;margin-bottom:10px;line-height:1.6;">对接 API 后，转化事件将实时回传至广告平台，无需手动操作。</div>
+      <a onclick="toast('跳转线索推送 API 文档…')" href="#" style="display:inline-flex;align-items:center;gap:6px;background:#1a1a1a;color:#fff;font-size:12px;border-radius:8px;padding:8px 16px;text-decoration:none;" target="_blank">
+        <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        查看线索推送 API 文档
+      </a>
+    </div>
+
+    <!-- 手动标注说明（选中时显示） -->
+    <div id="ret-manual-detail" style="display:none;margin-top:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:12px;color:#92400e;">
+      点击下方按钮后，将自动筛选出<strong>转化结果为空</strong>的客户，可逐条填写预约/成交等结果。
+    </div>
+  </div>
+  <div style="padding:12px 16px;border-top:1px solid #f0f0f0;background:#fafafa;display:flex;justify-content:flex-end;gap:8px;">
+    <button id="ret-submit-btn" onclick="submitReturn()" style="background:#18a058;color:#fff;font-size:12px;border-radius:8px;padding:7px 16px;cursor:pointer;">提交回传</button>
+  </div>
+</div>
+
+
+<!-- ============ 新建标签弹窗 ============ -->
+<div id="createTagModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:none;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.18);">
+    <div style="padding:16px 18px;border-bottom:1px solid #f0f0f0;">
+      <div style="font-size:14px;font-weight:700;color:#1a1a1a;">新建标签</div>
+      <div style="font-size:12px;color:#aaa;margin-top:2px;">可手动打标或设置自动规则</div>
+    </div>
+    <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px;">
+      <!-- 标签类型切换 -->
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#555;display:block;margin-bottom:6px;">标签类型</label>
+        <div style="display:flex;gap:8px;" id="tagTypePicker">
+          <button id="tagTypeBtn-feature" onclick="selectTagType('feature')" style="flex:1;font-size:12px;padding:7px 0;border-radius:8px;border:2px solid #1a1a1a;background:#1a1a1a;color:#fff;cursor:pointer;">用户特征标签</button>
+          <button id="tagTypeBtn-stage" onclick="selectTagType('stage')" style="flex:1;font-size:12px;padding:7px 0;border-radius:8px;border:2px solid #e5e7eb;background:#fff;color:#555;cursor:pointer;">用户阶段标签</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#555;display:block;margin-bottom:5px;">标签名称 <span style="color:#ef4444;">*</span></label>
+        <div style="position:relative;">
+          <input id="newTagName" maxlength="10" placeholder="最多 10 字" style="width:100%;font-size:13px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 40px 8px 12px;outline:none;box-sizing:border-box;" oninput="document.getElementById('newTagLen').textContent=this.value.length+'/10'">
+          <span id="newTagLen" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:11px;color:#ccc;">0/10</span>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#555;display:block;margin-bottom:6px;">标签颜色</label>
+        <div style="display:flex;gap:8px;" id="tagColorPicker">
+          <div class="cdot sel" style="background:#18a058;" data-c="green" onclick="selTagColor(this)"></div>
+          <div class="cdot" style="background:#3b82f6;" data-c="blue" onclick="selTagColor(this)"></div>
+          <div class="cdot" style="background:#a855f7;" data-c="purple" onclick="selTagColor(this)"></div>
+          <div class="cdot" style="background:#f59e0b;" data-c="yellow" onclick="selTagColor(this)"></div>
+          <div class="cdot" style="background:#ef4444;" data-c="red" onclick="selTagColor(this)"></div>
+          <div class="cdot" style="background:#9ca3af;" data-c="gray" onclick="selTagColor(this)"></div>
+        </div>
+      </div>
+      
+      <!-- 自动规则 -->
+      <div id="autoRuleSection" style="border-top:1px solid #f0f0f0;padding-top:12px;display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div>
+            <div style="font-size:12px;font-weight:500;color:#1a1a1a;">自动规则</div>
+            <div style="font-size:11px;color:#aaa;margin-top:1px;">同时满足所有条件的用户自动打上该标签</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="autoRuleToggle" onchange="toggleAutoRule(this.checked)"><span class="slider"></span></label>
+        </div>
+        <!-- 条件组列表 -->
+        <div id="autoRuleBody" style="display:none;flex-direction:column;gap:0;">
+          <div id="ruleCondList" style="display:flex;flex-direction:column;gap:0;"></div>
+          <button onclick="addRuleCond()" style="margin-top:8px;width:100%;font-size:12px;color:#18a058;border:1px dashed #86efac;border-radius:8px;padding:7px 0;background:#f0fdf4;cursor:pointer;">+ 添加条件</button>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:6px;border-top:1px solid #f0f0f0;">
+        <div><div style="font-size:12px;font-weight:500;">加入数据卡片</div><div style="font-size:11px;color:#aaa;">在顶部展示该标签统计</div></div>
+        <label class="toggle"><input type="checkbox" id="addToCardToggle"><span class="slider"></span></label>
+      </div>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid #f0f0f0;background:#fafafa;border-radius:0 0 14px 14px;display:flex;justify-content:flex-end;gap:8px;">
+      <button onclick="closeCreateTag()" class="filter-btn">取消</button>
+      <button onclick="confirmCreateTag()" style="background:#1a1a1a;color:#fff;font-size:12px;border-radius:8px;padding:7px 16px;cursor:pointer;">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 详情侧边栏 ============ -->
+<div id="detailMask" class="panel-mask" style="display:none;" onclick="closeDetail()"></div>
+<div id="detailPanel" class="side-panel" style="width:400px;transform:translateX(100%);display:flex;flex-direction:column;"></div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.92);color:#fff;font-size:12px;padding:8px 18px;border-radius:24px;display:none;align-items:center;gap:6px;z-index:999;white-space:nowrap;">
+  <svg style="width:13px;height:13px;color:#18a058;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+  <span id="toastMsg"></span>
+</div>
+
+
+<script>
+// ===== 数据 =====
+const COLORS = {
+  green:  { bg:'#dcfce7', text:'#15803d', border:'#bbf7d0', dot:'#18a058' },
+  blue:   { bg:'#dbeafe', text:'#1d4ed8', border:'#bfdbfe', dot:'#3b82f6' },
+  purple: { bg:'#f3e8ff', text:'#7e22ce', border:'#e9d5ff', dot:'#a855f7' },
+  yellow: { bg:'#fef9c3', text:'#854d0e', border:'#fde68a', dot:'#f59e0b' },
+  red:    { bg:'#fee2e2', text:'#b91c1c', border:'#fecaca', dot:'#ef4444' },
+  gray:   { bg:'#f3f4f6', text:'#4b5563', border:'#e5e7eb', dot:'#9ca3af' },
+};
+
+// 系统预设标签（priority 越大优先级越高，客户展示取最高优先级标签）
+// 优先级顺序：流失(1) < 进线(2) < 开口(3) < 潜在(4) < 留资(5) < 转化(6)
+const SYS_TAGS = [
+  { id:'s6', name:'转化客户',  color:'yellow', isSystem:true,  showCard:true,  count:67,  delta:'-5%',  tip:'留资后有预约、进店、付费记录的客户',       priority:6, tagType:'stage' },
+  { id:'s4', name:'留资客户',  color:'purple', isSystem:true,  showCard:true,  count:214, delta:'+5%',  tip:'已完成留资的客户，含有真实联系方式的线索及个微复制、唤端等留资行为', priority:5, tagType:'stage' },
+  { id:'s3', name:'潜在客户',  color:'blue',   isSystem:true,  showCard:true,  count:342, delta:'+8%',  tip:'未进线，但关注您或在笔记下评论的客户',     priority:4, tagType:'stage' },
+  { id:'s2', name:'开口客户',  color:'green',  isSystem:true,  showCard:true,  count:128, delta:'+12%', tip:'进线后主动发起私信沟通的客户',             priority:3, tagType:'stage' },
+  { id:'s1', name:'进线客户',  color:'green',  isSystem:true,  showCard:false, count:856, delta:'+9%',  tip:'发起私信会话的客户',                       priority:2, tagType:'stage' },
+  { id:'s5', name:'流失客户',  color:'gray',   isSystem:true,  showCard:false, count:856, delta:'+3%',  tip:'7天未与商家产生互动，或明确表明无成单意向的客户', priority:1, tagType:'stage' },
+  { id:'sf1', name:'高潜成交', color:'red',  isSystem:true, tagType:'feature', showCard:false, count:89,  delta:'+11%' },
+  { id:'sf2', name:'无意向',   color:'gray', isSystem:true, tagType:'feature', showCard:false, count:134, delta:'+2%'  },
+];
+// 标签显示顺序（可拖拽自定义，系统标签按优先级从高到低排列，自定义标签可插入其中）
+// getDisplayTag(customer): 取客户所有命中标签中 priority 最高的展示
+function getDisplayTag(c) {
+  const all = allTags();
+  // 系统标签按名称匹配，取最高 priority
+  // mock 数据直接用 c.tag；真实场景应从 c.tags[] 数组中取最高优先级
+  const t = all.find(x => x.name === c.tag);
+  return t || { name: c.tag, color: 'gray', priority: 0 };
+}
+let customTags = [
+  { id:'c1', name:'高意向未成交', color:'purple', isSystem:false, showCard:false, count:43, delta:'+5%', tagType:'feature' },
+  { id:'c2', name:'KOS转介绍',    color:'blue',   isSystem:false, showCard:false, count:18, delta:'+2%', tagType:'feature' },
+  { id:'c3', name:'已到店',       color:'green',  isSystem:false, showCard:false, count:29, delta:'+9%', tagType:'feature' },
+  { id:'c4', name:'VIP客户',      color:'yellow', isSystem:false, showCard:false, count:11, delta:'+1%', tagType:'feature' },
+];
+function allTags() { return [...SYS_TAGS, ...customTags]; }
+
+const customers = [
+  { name:'小红书69FB24AC',  phone:'125****1012', uid:'69fb07df000000002001002', account:'薯店-小红书', enterTime:'2026-05-06 17:20', openTime:'2026-05-06 18:05', leadTime:'2026-05-06 18:12', tag:'开口客户', tagColor:'green', wx:'wxid_abc', leadType:'私信留资', trafficType:'广告流量', convert:'', leads:3, remark:'对价格很感兴趣，周五回访', featureTags:['高潜成交'] },
+  { name:'小红书671C9221',  phone:'138****8888', uid:'671b4d0800000000...', account:'薯店-小红书', enterTime:'2026-05-07 12:29', openTime:'—', leadTime:'—', tag:'潜在客户', tagColor:'blue', wx:'—', leadType:'客服打标', trafficType:'自然流量', convert:'', leads:1, remark:'', featureTags:[] },
+  { name:'绿索在夜理',      phone:'139****6666', uid:'5f10672b000000010101c362', account:'薯店-广告', enterTime:'2026-05-06 17:00', openTime:'2026-05-06 17:30', leadTime:'2026-05-06 17:45', tag:'留资客户', tagColor:'purple', wx:'green_night', leadType:'落地页', trafficType:'广告流量', convert:'', leads:2, remark:'已发方案，等待回复', featureTags:['高潜成交'] },
+  { name:'麦克善',          phone:'186****9999', uid:'667d3273000000001b018c69', account:'薯店-小红书', enterTime:'2026-05-01 08:37', openTime:'2026-05-01 09:00', leadTime:'—', tag:'开口客户', tagColor:'green', wx:'—', leadType:'私信留资', trafficType:'自然流量', convert:'', leads:1, remark:'', featureTags:[] },
+  { name:'我看你像1012个人', phone:'137****5555', uid:'664fd9e0000000...', account:'薯店-广告', enterTime:'2026-05-07 11:45', openTime:'—', leadTime:'—', tag:'流失客户', tagColor:'gray', wx:'—', leadType:'—', trafficType:'广告流量', convert:'', leads:0, remark:'', featureTags:[] },
+  { name:'小红书671BBF8F',  phone:'—',          uid:'671b499900000000e00b577', account:'薯店-小红书', enterTime:'2026-05-07 11:06', openTime:'2026-05-07 11:20', leadTime:'2026-05-07 11:35', tag:'潜在客户', tagColor:'blue', wx:'wxid_xdf', leadType:'留资卡', trafficType:'自然流量', convert:'', leads:4, remark:'', featureTags:[] },
+  { name:'灰白',            phone:'—',          uid:'5f8fdd9e0000000...', account:'薯店-小红书', enterTime:'2026-05-03 01:17', openTime:'2026-05-03 01:40', leadTime:'—', tag:'流失客户', tagColor:'gray', wx:'—', leadType:'私信留资', trafficType:'自然流量', convert:'', leads:1, remark:'', featureTags:[] },
+  { name:'小红书671AA2F1',  phone:'131****7788', uid:'671aa2f1000000...', account:'薯店-广告', enterTime:'2026-05-08 09:12', openTime:'2026-05-08 09:30', leadTime:'2026-05-08 09:55', tag:'转化客户', tagColor:'orange', wx:'wxid_conv1', leadType:'落地页', trafficType:'广告流量', convert:'预约', leads:5, remark:'5月16日到店', featureTags:[] },
+  { name:'陈小姐',          phone:'150****3344', uid:'cc1234560000000...', account:'薯店-小红书', enterTime:'2026-05-07 14:00', openTime:'2026-05-07 14:22', leadTime:'2026-05-07 14:30', tag:'高意向未成交', tagColor:'purple', wx:'chen_lady', leadType:'企微名片', trafficType:'自然流量', convert:'', leads:2, remark:'', featureTags:['高意向未成交'] },
+];
+
+let activeCard = null;
+let selectedTagColor = 'green';
+
+// ===== 渲染列表 =====
+// ===== 勾选管理 =====
+const selectedRows = new Set();
+function toggleRowCheck(cb) {
+  const uid = cb.dataset.uid;
+  if(cb.checked) selectedRows.add(uid); else selectedRows.delete(uid);
+  const row = document.getElementById('row-'+uid);
+  if(row) row.style.background = cb.checked ? '#f0fdf4' : '';
+  syncCheckAll();
+}
+function toggleCheckAll(checked) {
+  const visibleUids = Array.from(document.querySelectorAll('[data-uid]')).map(el=>el.dataset.uid);
+  visibleUids.forEach(uid=>{ if(checked) selectedRows.add(uid); else selectedRows.delete(uid); });
+  renderList();
+}
+function syncCheckAll() {
+  const all = document.querySelectorAll('[data-uid]');
+  const allChecked = all.length > 0 && Array.from(all).every(el=>el.checked);
+  const ca = document.getElementById('checkAll');
+  if(ca){ ca.checked=allChecked; ca.indeterminate=!allChecked&&selectedRows.size>0; }
+}
+
+function renderList() {
+  const _fTraffic  = (document.getElementById('mf-traffictype')||{}).value||'';
+  const _fLeadType = (document.getElementById('mf-leadtype')||{}).value||'';
+  const _fConvert  = (document.getElementById('mf-convert')||{}).value||'';
+  const _fAccount  = (document.getElementById('mf-account')||{}).value||'';
+  const _fSearch   = ((document.getElementById('fs-search')||{}).value||'').trim();
+  const _fTag      = (document.getElementById('fs-tag')||{}).value||'';
+
+  let list = emptyConvertFilter
+    ? customers.filter(c => !c.convert)
+    : activeCard !== null
+      ? customers.filter(c => c.tag === ['开口客户','潜在客户','留资客户','转化客户'][activeCard])
+      : customers;
+
+  if (_fTraffic)  list = list.filter(c => (c.trafficType||'') === _fTraffic);
+  if (_fLeadType) list = list.filter(c => (c.leadType||'') === _fLeadType);
+  if (_fConvert)  list = list.filter(c => (c.convert||'') === _fConvert);
+  if (_fAccount)  list = list.filter(c => (c.account||'') === _fAccount);
+  if (_fTag)      list = list.filter(c => (c.tag||'') === _fTag);
+  if (_fSearch)   list = list.filter(c => c.name.includes(_fSearch) || (c.phone||'').includes(_fSearch) || (c.uid||'').includes(_fSearch));
+
+  document.getElementById('custList').innerHTML = list.length === 0
+    ? '<div style="padding:40px;text-align:center;font-size:12px;color:#ccc;">暂无数据</div>'
+    : list.map(c => {
+      const tag = allTags().find(t=>t.name===c.tag);
+      const tc = tag ? COLORS[tag.color] : COLORS.gray;
+      const convertLabel = c.convert || '填写';
+      const convertStyle = c.convert ? 'color:#15803d;background:#f0fdf4;border-color:#bbf7d0;' : 'color:#6b7280;background:#fff;border-color:#e5e7eb;';
+      const convertBtn = `<button onclick="openConvertPicker(this,'${c.name}')" style="font-size:11px;${convertStyle}border:1px solid;border-radius:6px;padding:2px 8px;cursor:pointer;">${convertLabel}</button>`;
+      // 用名字第一个字做头像色
+      const avatarColors = {'小':'#dcfce7','绿':'#d1fae5','麦':'#fef3c7','我':'#fce7f3','灰':'#f3f4f6','陈':'#ede9fe'};
+      const avatarBg = avatarColors[c.name[0]] || '#e5e7eb';
+      const avatarFg = avatarBg==='#e5e7eb' ? '#6b7280' : '#374151';
+      const isChecked = selectedRows.has(c.uid);
+      return `<div class="table-row" style="display:grid;grid-template-columns:36px 1.6fr 1.5fr 1fr 1.3fr 1.3fr 1.3fr 0.8fr 1fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;min-width:1800px;${isChecked?'background:#f0fdf4;':''}" id="row-${c.uid}">
+        <div style="display:flex;align-items:center;justify-content:center;">
+          <input type="checkbox" data-uid="${c.uid}" ${isChecked?'checked':''} onchange="toggleRowCheck(this)" style="width:14px;height:14px;cursor:pointer;accent-color:#1a1a1a;">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+          <div style="width:26px;height:26px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${avatarFg};flex-shrink:0;">${c.name[0]}</div>
+          <div style="font-weight:500;font-size:12px;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${c.name}</div>
+        </div>
+        <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.uid}</div>
+        <div style="font-size:12px;color:#555;">${c.account}</div>
+        <div style="font-size:11px;color:#555;">${c.enterTime}</div>
+        <div style="font-size:11px;color:#555;">${c.openTime}</div>
+        <div style="font-size:11px;color:#555;">${c.leadTime}</div>
+        <div style="font-size:12px;">
+          ${c.leads > 0
+            ? `<span onclick="openLeadsDetail('${c.uid}')" style="color:#1a1a1a;cursor:pointer;font-weight:700;">${c.leads}</span>`
+            : `<span style="color:#ccc;">—</span>`}
+        </div>
+        <div style="font-size:12px;color:#555;">${c.trafficType||'—'}</div>
+        <div>${(()=>{
+  // 阶段系统标签：c.tag 命中的那个（只显示一个）
+  const stageTag = allTags().find(t=>t.tagType==='stage' && t.name===c.tag);
+  // 特征标签：c.featureTags 里所有命中的
+  const featTags = (c.featureTags||[]).map(n=>allTags().find(t=>t.name===n)).filter(Boolean);
+  // 合并，最多展示3个
+  const allHit = [...(stageTag?[stageTag]:[]), ...featTags];
+  const shown = allHit.slice(0,3);
+  const hidden = allHit.slice(3);
+  const pills = shown.map(t=>{
+    return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:20px;background:#f3f4f6;border:1px solid #e5e7eb;white-space:nowrap;">
+      <span style="width:5px;height:5px;border-radius:50%;background:#9ca3af;flex-shrink:0;"></span>
+      <span style="font-size:11px;color:#6b7280;">${t.name}</span>
+    </span>`;
+  }).join('');
+  const more = hidden.length>0 ? `<span title="${hidden.map(t=>t.name).join('、')}" style="font-size:11px;color:#9ca3af;padding:2px 5px;border-radius:20px;border:1px solid #e5e7eb;cursor:default;">+${hidden.length}</span>` : '';
+  return `<div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center;">${pills}${more}</div>`;
+})()}</div>
+        <div>${convertBtn}</div>
+        <div style="font-size:12px;color:#555;">${c.phone}</div>
+        <div style="font-size:12px;color:#555;">${c.wx||'—'}</div>
+        <div style="font-size:12px;color:#555;">${c.leadType}</div>
+        <div style="font-size:12px;color:#555;overflow:hidden;">
+          ${c.remark
+            ? `<span title="${c.remark}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;cursor:pointer;color:#555;" onclick="openRemarkEdit('${c.uid}',this)">${c.remark}</span>`
+            : `<span onclick="openRemarkEdit('${c.uid}',this)" style="color:#d1d5db;cursor:pointer;font-size:12px;">+ 填写</span>`
+          }
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;"><span class="action-btn" onclick="openDetail('${c.uid}')" style="color:#18a058;">详情</span><span class="action-btn">进入私信</span></div>
+      </div>`;
+    }).join('');
+}
+
+// ===== 卡片筛选 =====
+function _setResetHighlight(on) {
+  const btn = document.getElementById('resetBtn');
+  if (!btn) return;
+  if (on) {
+    btn.style.background='#1a1a1a'; btn.style.color='#fff';
+    btn.style.borderColor='#1a1a1a'; btn.title='点击重置筛选';
+  } else {
+    btn.style.background=''; btn.style.color='';
+    btn.style.borderColor=''; btn.title='';
+  }
+}
+function filterByCard(idx) {
+  const cards = document.querySelectorAll('.stat-card');
+  if (activeCard === idx) {
+    activeCard = null;
+    cards.forEach(c=>c.classList.remove('active'));
+    _setResetHighlight(false);
+  } else {
+    activeCard = idx;
+    cards.forEach((c,i)=>c.classList.toggle('active',i===idx));
+    const labels = ['开口客户','潜在客户','留资客户','转化客户'];
+    document.getElementById('cardFilterLabel').textContent = labels[idx];
+    _setResetHighlight(true);
+  }
+  renderList();
+}
+function clearCardFilter() {
+  activeCard=null;
+  emptyConvertFilter=false;
+  document.querySelectorAll('.stat-card').forEach(c=>c.classList.remove('active'));
+  _setResetHighlight(false);
+  renderList();
+}
+
+// ===== 转化结果气泡（选项可自定义增删）=====
+// 全局转化选项（预设+自定义），支持增删
+let convertOptions = [
+  { key:'预约', icon:'📅', hasAmt:false },
+  { key:'成交', icon:'✅', hasAmt:true  },
+];
+let _currentPickerCust = null; // 当前打开气泡的客户名
+
+function openConvertPicker(btn, custName) {
+  document.querySelectorAll('.convert-popup').forEach(p=>p.remove());
+  _currentPickerCust = custName;
+  const rect = btn.getBoundingClientRect();
+  const popup = document.createElement('div');
+  popup.id = 'convertPopup';
+  popup.className = 'convert-popup';
+  // 在按钮下方展示，宽200px，贴近列表行
+  const left = Math.min(rect.left, window.innerWidth - 220);
+  const top = rect.bottom + 4;
+  popup.style.cssText = `position:fixed;top:${top}px;left:${left}px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:4px 0;z-index:600;width:200px;`;
+  renderConvertPopup(popup, custName);
+  document.body.appendChild(popup);
+  setTimeout(()=>document.addEventListener('click',e=>{if(!popup.contains(e.target)&&e.target!==btn)popup.remove()},{once:true}),60);
+}
+
+function renderConvertPopup(popup, custName) {
+  const c = customers.find(x=>x.name===custName)||{};
+  const curVal = c.convert||'';
+  const optRows = convertOptions.map(opt=>{
+    const selected = curVal.startsWith(opt.key);
+    const isDefault = ['预约','成交'].includes(opt.key);
+    const amtVal = (opt.hasAmt && curVal.includes('¥')) ? curVal.split('¥')[1].trim() : '';
+    // 成交行下方始终内嵌金额输入区，点击成交才展开（用 display 控制）
+    const amtBlock = opt.hasAmt ? `
+      <div id="convertAmtRow" style="display:${selected?'flex':'none'};align-items:center;gap:6px;padding:6px 12px 10px 12px;background:#f9fafb;border-bottom:1px solid #f3f4f6;">
+        <span style="font-size:12px;color:#888;flex-shrink:0;">成交金额</span>
+        <span style="font-size:12px;color:#aaa;flex-shrink:0;">¥</span>
+        <input id="convertAmtInput" type="text" inputmode="decimal" placeholder="选填" value="${amtVal}"
+          style="flex:1;border:1px solid #e5e7eb;border-radius:6px;padding:5px 8px;font-size:12px;outline:none;background:#fff;min-width:0;"
+          onclick="event.stopPropagation()"
+          oninput="updateConvertWithAmt('${custName}')">
+        <button onclick="event.stopPropagation();confirmConvert('${custName}')" style="flex-shrink:0;background:#1a1a1a;color:#fff;font-size:11px;border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap;">确认</button>
+      </div>` : '';
+    return `<div onclick="selectConvertOption(this,'${custName}','${opt.key}',${opt.hasAmt})"
+      style="padding:10px 12px;font-size:13px;cursor:pointer;color:#1a1a1a;display:flex;align-items:center;gap:8px;background:${selected?'#f0fdf4':''};transition:background .1s;"
+      onmouseover="this.style.background='${selected?'#dcfce7':'#f9fafb'}'"
+      onmouseout="this.style.background='${selected?'#f0fdf4':''}'">
+      <span style="flex:1;">${opt.key}</span>
+      ${selected?`<svg style="width:14px;height:14px;color:#18a058;flex-shrink:0;" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>`:''}
+      ${!isDefault?`<span onclick="event.stopPropagation();removeConvertOption('${opt.key}')" style="color:#d1d5db;font-size:14px;cursor:pointer;flex-shrink:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">×</span>`:''}
+    </div>${amtBlock}`;
+  }).join('');
+
+  popup.innerHTML = `
+    <div style="font-size:11px;color:#9ca3af;padding:8px 12px 6px;">转化结果</div>
+    <div id="convertOptionList">${optRows}</div>
+    <div style="border-top:1px solid #f3f4f6;margin:2px 0;"></div>
+    <div onclick="showAddConvertInput()" style="padding:7px 12px;font-size:12px;color:#18a058;cursor:pointer;display:flex;align-items:center;gap:6px;"
+      onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''">
+      <svg style="width:12px;height:12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>添加自定义选项
+    </div>
+    <div id="addConvertInputRow" style="display:none;padding:0 8px 8px;gap:6px;align-items:center;">
+      <input id="addConvertInput" type="text" placeholder="输入结果名称" maxlength="10"
+        style="flex:1;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;font-size:12px;outline:none;min-width:0;">
+      <button onclick="confirmAddConvertOption('${custName}')" style="background:#1a1a1a;color:#fff;font-size:11px;border-radius:7px;padding:5px 9px;cursor:pointer;white-space:nowrap;flex-shrink:0;">确认</button>
+    </div>`;
+}
+
+function selectConvertOption(el, custName, key, hasAmt) {
+  const c = customers.find(x=>x.name===custName);
+  if(!c) return;
+  c.convert = key;
+  renderList(); // 立即更新列表，转化结果列马上变成「成交」
+  if(hasAmt) {
+    // 成交：重新渲染气泡（附在新渲染后的按钮上），展开金额行
+    const newBtn = document.querySelector(`button[onclick*="openConvertPicker"][onclick*="${custName}"]`);
+    if(newBtn) {
+      openConvertPicker(newBtn, custName);
+      setTimeout(()=>{ const inp=document.getElementById('convertAmtInput'); if(inp){inp.focus();} }, 80);
+    }
+    return;
+  }
+  toast(`已标注「${custName}」为 ${key}`);
+  document.querySelectorAll('.convert-popup').forEach(p=>p.remove());
+}
+
+function confirmConvert(custName) {
+  const amt = document.getElementById('convertAmtInput')?.value||'';
+  const c = customers.find(x=>x.name===custName);
+  if(c) { c.convert = amt ? `成交 ¥${amt}` : '成交'; renderList(); }
+  toast(`已标注「${custName}」为 ${c?.convert||'成交'}`);
+  document.querySelectorAll('.convert-popup').forEach(p=>p.remove());
+}
+function updateConvertWithAmt(custName) {
+  const c = customers.find(x=>x.name===custName);
+  const amt = document.getElementById('convertAmtInput')?.value||'';
+  if(c) { c.convert = amt ? `成交 ¥${amt}` : '成交'; renderList(); }
+}
+
+function removeConvertOption(key) {
+  const isDefault = ['预约','成交'].includes(key);
+  if(isDefault){ toast('预设选项不可删除'); return; }
+  convertOptions = convertOptions.filter(o=>o.key!==key);
+  const popup = document.getElementById('convertPopup');
+  if(popup && _currentPickerCust) renderConvertPopup(popup, _currentPickerCust);
+}
+
+function showAddConvertInput() {
+  const row = document.getElementById('addConvertInputRow');
+  if(row){ row.style.display='flex'; document.getElementById('addConvertInput')?.focus(); }
+}
+
+function confirmAddConvertOption(custName) {
+  const inp = document.getElementById('addConvertInput');
+  const val = inp?.value?.trim();
+  if(!val){ inp?.focus(); return; }
+  if(convertOptions.find(o=>o.key===val)){ toast('选项已存在'); return; }
+  const emojis = ['🏷️','⭐','🎯','🔖','💎'];
+  convertOptions.push({ key:val, icon: emojis[convertOptions.length % emojis.length], hasAmt:false });
+  const popup = document.getElementById('convertPopup');
+  if(popup) renderConvertPopup(popup, custName);
+  toast(`已添加选项「${val}」`);
+}
+
+// ===== 标签设置面板 =====
+function openTagSettings() {
+  document.getElementById('tagMask').style.display='block';
+  document.getElementById('tagPanel').style.transform='translateX(0)';
+  renderTagCardPanel();
+  renderTagMgr();
+  switchTagPanelTab('tag'); // 默认打开标签管理
+}
+function closeTagSettings() {
+  document.getElementById('tagMask').style.display='none';
+  document.getElementById('tagPanel').style.transform='translateX(100%)';
+}
+function switchTagPanelTab(tab) {
+  ['tag','card'].forEach(t=>{
+    const tabEl = document.getElementById('tpanel-tab-'+t);
+    const contentEl = document.getElementById('tpanel-content-'+t);
+    if(tabEl) {
+      tabEl.style.borderBottomColor = t===tab ? '#18a058' : 'transparent';
+      tabEl.style.color = t===tab ? '#18a058' : '#888';
+      tabEl.style.fontWeight = t===tab ? '500' : '400';
+    }
+    if(contentEl) {
+      contentEl.style.display = t===tab ? 'flex' : 'none';
+    }
+  });
+}
+
+// ===== 底部轮播 =====
+let _carouselIdx = 0;
+setInterval(() => {
+  const total = 2;
+  document.getElementById('carousel-' + _carouselIdx).style.opacity = '0';
+  _carouselIdx = (_carouselIdx + 1) % total;
+  document.getElementById('carousel-' + _carouselIdx).style.opacity = '1';
+}, 4000);
+
+// ===== 行为时间日历选择器 =====
+let _calPickStart=null, _calPickEnd=null, _calHover=null;
+let _calLeftYear=new Date().getFullYear(), _calLeftMonth=new Date().getMonth();
+let _calRightYear=_calLeftYear, _calRightMonth=(_calLeftMonth+1)%12;
+if(_calLeftMonth===11){_calRightYear=_calLeftYear+1;_calRightMonth=0;}
+
+function _fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function _parseDate(s){const p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
+function _dInRange(d,s,e){return s&&e&&d>=s&&d<=e;}
+
+function _renderCal(containerId,year,month,isLeft){
+  const container=document.getElementById(containerId);
+  if(!container)return;
+  const names=['一','二','三','四','五','六','日'];
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const today=new Date(); today.setHours(0,0,0,0);
+  const firstDay=new Date(year,month,1);
+  const startWd=(firstDay.getDay()+6)%7; // 周一为0
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const prevDays=new Date(year,month,0).getDate();
+  let html=`<div style="text-align:center;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:#1a1a1a;">
+      ${isLeft?`<span onclick="_calNav(-1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&laquo;</span><span onclick="_calNavM(-1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&lsaquo;</span>`:'<span style="width:44px;"></span>'}
+      <span>${year}年 ${monthNames[month]}</span>
+      ${!isLeft?`<span onclick="_calNavM(1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&rsaquo;</span><span onclick="_calNav(1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&raquo;</span>`:'<span style="width:44px;"></span>'}
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center;">
+    ${names.map(n=>`<div style="font-size:11px;color:#aaa;padding:4px 0;">${n}</div>`).join('')}`;
+  let cells=[];
+  for(let i=0;i<startWd;i++) cells.push({d:new Date(year,month-1,prevDays-startWd+1+i),cur:false});
+  for(let i=1;i<=daysInMonth;i++) cells.push({d:new Date(year,month,i),cur:true});
+  const rem=42-cells.length;
+  for(let i=1;i<=rem;i++) cells.push({d:new Date(year,month+1,i),cur:false});
+  cells.forEach(({d,cur})=>{
+    const ds=_fmt(d);
+    const isStart=_calPickStart&&_fmt(_calPickStart)===ds;
+    const isEnd=_calPickEnd&&_fmt(_calPickEnd)===ds;
+    const inRange=_calPickStart&&(_calPickEnd||_calHover)&&_dInRange(d,_calPickStart,_calPickEnd||_calHover);
+    const isToday=_fmt(today)===ds;
+    const isFuture=d>today;
+    let bg='', color=cur?(isFuture?'#ccc':'#1a1a1a'):'#d1d5db', fw='normal', br='6px', bdr='none';
+    if(isStart||isEnd){bg='#1a1a1a';color='#fff';fw='600';}
+    else if(inRange){bg='#e8f5e9';color='#15803d';}
+    if(isToday&&!isStart&&!isEnd){bdr='1.5px solid #18a058';}
+    const cursor=isFuture?'default':'pointer';
+    html+=`<div style="padding:5px 2px;background:${bg};border-radius:${br};color:${color};font-weight:${fw};font-size:12px;cursor:${cursor};border:${bdr};"
+      ${!isFuture?`onclick="_calClick('${ds}')" onmouseover="_calHoverDay('${ds}')" onmouseout="_calHoverDay(null)"`:''}>${d.getDate()}</div>`;
+  });
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function _renderBothCal(){
+  _renderCal('calLeft',_calLeftYear,_calLeftMonth,true);
+  _renderCal('calRight',_calRightYear,_calRightMonth,false);
+  // 更新标签
+  const lbl=document.getElementById('dateRangeLabel');
+  if(lbl){
+    if(_calPickStart&&_calPickEnd) lbl.textContent=_fmt(_calPickStart)+' 至 '+_fmt(_calPickEnd);
+    else if(_calPickStart) lbl.textContent=_fmt(_calPickStart)+' 至 请选择结束日期';
+    else lbl.textContent='请选择开始日期';
+  }
+}
+
+function _calNav(dir){ // 年
+  _calLeftYear+=dir; _calRightYear+=dir;
+  _syncRightCal(); _renderBothCal();
+}
+function _calNavM(dir){ // 月
+  let m=_calLeftMonth+dir, y=_calLeftYear;
+  if(m>11){m=0;y++;}else if(m<0){m=11;y--;}
+  _calLeftYear=y;_calLeftMonth=m;
+  _syncRightCal(); _renderBothCal();
+}
+function _syncRightCal(){
+  let m=_calLeftMonth+1, y=_calLeftYear;
+  if(m>11){m=0;y++;}
+  _calRightYear=y; _calRightMonth=m;
+}
+function _calClick(ds){
+  const d=_parseDate(ds);
+  if(!_calPickStart||(_calPickStart&&_calPickEnd)){
+    _calPickStart=d; _calPickEnd=null;
+  } else {
+    if(d<_calPickStart){_calPickEnd=_calPickStart;_calPickStart=d;}
+    else _calPickEnd=d;
+  }
+  _calHover=null;
+  _renderBothCal();
+}
+function _calHoverDay(ds){
+  _calHover=ds?_parseDate(ds):null;
+  _renderBothCal();
+}
+
+function toggleDatePicker(e){
+  e.stopPropagation();
+  const panel=document.getElementById('datePickerPanel');
+  if(panel.style.display==='block'){panel.style.display='none';return;}
+  panel.style.display='block';
+  // 若没有已选区间，初始化日历
+  if(!_calPickStart){
+    const now=new Date();
+    _calLeftYear=now.getFullYear();_calLeftMonth=now.getMonth();
+    _syncRightCal();
+  }
+  _renderBothCal();
+}
+function onDatePresetChange(val){} // 保留空函数防旧引用报错
+
+// ===== 导出弹窗专属日历（独立状态）=====
+let _expCalPickStart=null, _expCalPickEnd=null, _expCalHover=null;
+let _expCalLY=new Date().getFullYear(), _expCalLM=new Date().getMonth();
+let _expCalRY=_expCalLY, _expCalRM=(_expCalLM+1)%12;
+if(_expCalLM===11){_expCalRY=_expCalLY+1;_expCalRM=0;}
+
+function _syncExpRightCal(){
+  let m=_expCalLM+1, y=_expCalLY;
+  if(m>11){m=0;y++;} _expCalRY=y;_expCalRM=m;
+}
+function _renderExpBothCal(){
+  // 复用主日历渲染逻辑，但传入独立容器 & 状态
+  _renderExpCal('expCalLeft',_expCalLY,_expCalLM,true);
+  _renderExpCal('expCalRight',_expCalRY,_expCalRM,false);
+  const lbl=document.getElementById('expDateRangeLabel');
+  if(lbl){
+    if(_expCalPickStart&&_expCalPickEnd) lbl.textContent=_fmt(_expCalPickStart)+' 至 '+_fmt(_expCalPickEnd);
+    else if(_expCalPickStart) lbl.textContent=_fmt(_expCalPickStart)+' 至 请选择结束';
+    else lbl.textContent='请选择开始日期';
+  }
+}
+function _renderExpCal(containerId,year,month,isLeft){
+  const container=document.getElementById(containerId);
+  if(!container)return;
+  const names=['一','二','三','四','五','六','日'];
+  const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const today=new Date(); today.setHours(0,0,0,0);
+  const startWd=(new Date(year,month,1).getDay()+6)%7;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const prevDays=new Date(year,month,0).getDate();
+  let html=`<div style="text-align:center;margin-bottom:6px;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:13px;font-weight:600;color:#1a1a1a;">
+      ${isLeft?`<span onclick="_expCalNav(-1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&laquo;</span><span onclick="_expCalNavM(-1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&lsaquo;</span>`:'<span style="width:40px;"></span>'}
+      <span>${year}年 ${monthNames[month]}</span>
+      ${!isLeft?`<span onclick="_expCalNavM(1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&rsaquo;</span><span onclick="_expCalNav(1)" style="cursor:pointer;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background=''">&raquo;</span>`:'<span style="width:40px;"></span>'}
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center;">
+    ${names.map(n=>`<div style="font-size:11px;color:#aaa;padding:3px 0;">${n}</div>`).join('')}`;
+  let cells=[];
+  for(let i=0;i<startWd;i++) cells.push({d:new Date(year,month-1,prevDays-startWd+1+i),cur:false});
+  for(let i=1;i<=daysInMonth;i++) cells.push({d:new Date(year,month,i),cur:true});
+  const rem=42-cells.length;
+  for(let i=1;i<=rem;i++) cells.push({d:new Date(year,month+1,i),cur:false});
+  cells.forEach(({d,cur})=>{
+    const ds=_fmt(d);
+    const isStart=_expCalPickStart&&_fmt(_expCalPickStart)===ds;
+    const isEnd=_expCalPickEnd&&_fmt(_expCalPickEnd)===ds;
+    const inRange=_expCalPickStart&&(_expCalPickEnd||_expCalHover)&&_dInRange(d,_expCalPickStart,_expCalPickEnd||_expCalHover);
+    const isFuture=d>today;
+    let bg='', color=cur?(isFuture?'#ccc':'#1a1a1a'):'#d1d5db', fw='normal', bdr='none';
+    if(isStart||isEnd){bg='#1a1a1a';color='#fff';fw='600';}
+    else if(inRange){bg='#e8f5e9';color='#15803d';}
+    const cursor=isFuture?'default':'pointer';
+    html+=`<div style="padding:4px 2px;background:${bg};border-radius:5px;color:${color};font-weight:${fw};font-size:12px;cursor:${cursor};border:${bdr};"
+      ${!isFuture?`onclick="_expCalClick('${ds}')" onmouseover="_expCalHoverDay('${ds}')" onmouseout="_expCalHoverDay(null)"`:''}>${d.getDate()}</div>`;
+  });
+  html+='</div>';
+  container.innerHTML=html;
+}
+function _expCalNav(dir){_expCalLY+=dir;_expCalRY+=dir;_syncExpRightCal();_renderExpBothCal();}
+function _expCalNavM(dir){let m=_expCalLM+dir,y=_expCalLY;if(m>11){m=0;y++;}else if(m<0){m=11;y--;}_expCalLY=y;_expCalLM=m;_syncExpRightCal();_renderExpBothCal();}
+function _expCalClick(ds){
+  const d=_parseDate(ds);
+  if(!_expCalPickStart||(_expCalPickStart&&_expCalPickEnd)){_expCalPickStart=d;_expCalPickEnd=null;}
+  else{if(d<_expCalPickStart){_expCalPickEnd=_expCalPickStart;_expCalPickStart=d;}else _expCalPickEnd=d;}
+  _expCalHover=null;_renderExpBothCal();
+}
+function _expCalHoverDay(ds){_expCalHover=ds?_parseDate(ds):null;_renderExpBothCal();}
+
+function toggleExpDatePicker(e){
+  e.stopPropagation();
+  const panel=document.getElementById('expDatePanel');
+  if(!panel)return;
+  if(panel.style.display==='block'){panel.style.display='none';return;}
+  panel.style.display='block';
+  if(!_expCalPickStart){const now=new Date();_expCalLY=now.getFullYear();_expCalLM=now.getMonth();_syncExpRightCal();}
+  _renderExpBothCal();
+}
+function applyExpDateQuick(p){
+  const today=new Date();today.setHours(0,0,0,0);
+  let s,e=new Date(today);
+  if(p==='today'){s=new Date(today);}
+  else if(p==='7d'){s=new Date(today);s.setDate(s.getDate()-6);}
+  else if(p==='30d'){s=new Date(today);s.setDate(s.getDate()-29);}
+  else if(p==='thismonth'){s=new Date(today.getFullYear(),today.getMonth(),1);}
+  else if(p==='lastmonth'){s=new Date(today.getFullYear(),today.getMonth()-1,1);e=new Date(today.getFullYear(),today.getMonth(),0);}
+  _expCalPickStart=s;_expCalPickEnd=e;
+  const labels={'today':'今天','7d':'近7天','30d':'近30天','thismonth':'本月','lastmonth':'上个月'};
+  _updateExpDateLabel(labels[p]||(_fmt(s)+' 至 '+_fmt(e)));
+  document.getElementById('expDatePanel').style.display='none';
+  _renderExpBothCal();
+}
+function confirmExpDate(){
+  if(_expCalPickStart&&_expCalPickEnd){
+    _updateExpDateLabel(_fmt(_expCalPickStart)+' 至 '+_fmt(_expCalPickEnd));
+  }
+  document.getElementById('expDatePanel').style.display='none';
+}
+function _updateExpDateLabel(text){
+  const lbl=document.getElementById('expDateLabel');
+  if(lbl){lbl.textContent=text||'行为时间';lbl.style.color=text?'#1a1a1a':'#888';}
+}
+document.addEventListener('click',function(e){
+  const wrap=document.getElementById('expDateWrap');
+  if(wrap&&!wrap.contains(e.target)){
+    const panel=document.getElementById('expDatePanel');
+    if(panel) panel.style.display='none';
+  }
+});
+
+function _updateDateTriggerLabel(text){
+  const lbl=document.getElementById('datePickerLabel');
+  if(!lbl)return;
+  if(text){lbl.textContent=text;lbl.style.color='#1a1a1a';}
+  else{lbl.textContent='行为时间';lbl.style.color='#888';}
+}
+
+function applyDatePresetQuick(p){
+  const today=new Date(); today.setHours(0,0,0,0);
+  let s,e=new Date(today);
+  if(p==='today'){s=new Date(today);}
+  else if(p==='yesterday'){s=new Date(today);s.setDate(s.getDate()-1);e=new Date(s);}
+  else if(p==='7d'){s=new Date(today);s.setDate(s.getDate()-6);}
+  else if(p==='14d'){s=new Date(today);s.setDate(s.getDate()-13);}
+  else if(p==='30d'){s=new Date(today);s.setDate(s.getDate()-29);}
+  else if(p==='week'){s=new Date(today);s.setDate(s.getDate()-(s.getDay()+6)%7);}
+  else if(p==='thismonth'){s=new Date(today.getFullYear(),today.getMonth(),1);}
+  else if(p==='lastmonth'){s=new Date(today.getFullYear(),today.getMonth()-1,1);e=new Date(today.getFullYear(),today.getMonth(),0);}
+  _calPickStart=s;_calPickEnd=e;
+  document.getElementById('fs-date-s').value=_fmt(s);
+  document.getElementById('fs-date-e').value=_fmt(e);
+  const labels={'today':'今天','yesterday':'昨天','7d':'最近7天','14d':'最近14天','30d':'最近30天','week':'本周','thismonth':'本月','lastmonth':'上个月'};
+  _updateDateTriggerLabel(labels[p]||(_fmt(s)+' 至 '+_fmt(e)));
+  document.getElementById('datePickerPanel').style.display='none';
+  _renderBothCal();
+  renderList();
+}
+
+function confirmDatePicker(){
+  if(_calPickStart&&_calPickEnd){
+    document.getElementById('fs-date-s').value=_fmt(_calPickStart);
+    document.getElementById('fs-date-e').value=_fmt(_calPickEnd);
+    _updateDateTriggerLabel(_fmt(_calPickStart)+' 至 '+_fmt(_calPickEnd));
+    renderList();
+  }
+  document.getElementById('datePickerPanel').style.display='none';
+}
+
+// 点击外部关闭日历
+document.addEventListener('click',function(e){
+  const wrap=document.getElementById('datePickerWrap');
+  if(wrap&&!wrap.contains(e.target)){
+    document.getElementById('datePickerPanel').style.display='none';
+  }
+});
+
+// ===== 卡片日期选择 =====
+const CARD_DATA = {
+  0: { '近1天':[18,'较昨日增长 2人','+2%'], '近7天':[128,'较上周增长 15人','+12%'], '近30天':[412,'较上月增长 58人','+16%'], '自定义':[128,'较上周增长 15人','+12%'] },
+  1: { '近1天':[45,'较昨日增长 5人','+5%'], '近7天':[342,'较上周增长 26人','+8%'], '近30天':[980,'较上月增长 97人','+11%'], '自定义':[342,'较上周增长 26人','+8%'] },
+  2: { '近1天':[120,'较昨日增长 8人','+8%'], '近7天':[856,'较上周增长 25人','+3%'], '近30天':[2340,'较上月增长 312人','+15%'], '自定义':[856,'较上周增长 25人','+3%'] },
+  3: { '近1天':[6,'较昨日减少 1人','-1%'], '近7天':[67,'较上周减少 3人','-5%'], '近30天':[201,'较上月减少 9人','-4%'], '自定义':[67,'较上周减少 3人','-5%'] },
+};
+function onCardDateChange(idx, sel) {} // legacy, unused
+function onGlobalPeriodChange(period) {
+  if(period==='自定义') {
+    _openPeriodDatePicker();
+    return;
+  }
+  _applyGlobalPeriod(period);
+}
+
+function _openPeriodDatePicker() {
+  const exist = document.getElementById('periodPickerModal');
+  if(exist){ exist.remove(); return; }
+  const modal = document.createElement('div');
+  modal.id = 'periodPickerModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:900;display:flex;align-items:center;justify-content:center;';
+  const today = new Date();
+  const fmt = d => d.toISOString().slice(0,10);
+  const d7ago = new Date(today); d7ago.setDate(today.getDate()-7);
+  modal.innerHTML = `
+  <div style="background:#fff;border-radius:14px;width:340px;box-shadow:0 16px 48px rgba(0,0,0,.15);padding:20px 22px;" onclick="event.stopPropagation()">
+    <div style="font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:16px;">自定义对比周期</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
+      <div>
+        <div style="font-size:11px;color:#888;margin-bottom:5px;">当前周期（观察期）</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="date" id="pdStart" value="${fmt(d7ago)}" style="flex:1;font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:6px 8px;outline:none;">
+          <span style="font-size:12px;color:#aaa;">至</span>
+          <input type="date" id="pdEnd" value="${fmt(today)}" style="flex:1;font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:6px 8px;outline:none;">
+        </div>
+      </div>
+      <div style="background:#f9fafb;border-radius:8px;padding:10px 12px;font-size:12px;color:#555;" id="pdCompareInfo">
+        对比周期：自动计算为前 <strong>7</strong> 天（2026-05-05 至 2026-05-11）
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="document.getElementById('periodPickerModal').remove()" style="font-size:12px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 14px;background:#fff;color:#555;cursor:pointer;">取消</button>
+      <button onclick="_confirmCustomPeriod()" style="font-size:12px;border-radius:8px;padding:7px 16px;background:#1a1a1a;color:#fff;cursor:pointer;border:none;">确定</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', ()=>modal.remove());
+
+  // 实时更新对比周期说明
+  function updateCompareInfo(){
+    const s = document.getElementById('pdStart').value;
+    const e = document.getElementById('pdEnd').value;
+    if(!s||!e) return;
+    const ds = new Date(s), de = new Date(e);
+    const days = Math.round((de-ds)/(1000*60*60*24))+1;
+    const cs = new Date(ds); cs.setDate(ds.getDate()-days);
+    const ce = new Date(ds); ce.setDate(ds.getDate()-1);
+    document.getElementById('pdCompareInfo').innerHTML =
+      `对比周期：自动计算为前 <strong>${days}</strong> 天（${cs.toISOString().slice(0,10)} 至 ${ce.toISOString().slice(0,10)}）`;
+  }
+  document.getElementById('pdStart').addEventListener('change', updateCompareInfo);
+  document.getElementById('pdEnd').addEventListener('change', updateCompareInfo);
+  updateCompareInfo();
+}
+
+function _confirmCustomPeriod() {
+  const s = document.getElementById('pdStart')?.value;
+  const e = document.getElementById('pdEnd')?.value;
+  document.getElementById('periodPickerModal')?.remove();
+  if(!s||!e){ toast('请选择完整日期范围'); return; }
+  const ds = new Date(s), de = new Date(e);
+  const days = Math.round((de-ds)/(1000*60*60*24))+1;
+  const cs = new Date(ds); cs.setDate(ds.getDate()-days);
+  const ce = new Date(ds); ce.setDate(ds.getDate()-1);
+  // 更新 pill 高亮
+  ['1d','1w','1m','cus'].forEach(k=>{
+    const el = document.getElementById('global-pill-'+k);
+    if(el) el.classList.toggle('pill-active', k==='cus');
+  });
+  // 更新卡片数据（用自定义 key）
+  [0,1,2,3].forEach(idx => {
+    const data = CARD_DATA[idx]?.['近7天'];
+    if(!data) return;
+    document.getElementById('card-num-'+idx).textContent = data[0];
+    document.getElementById('card-delta-'+idx).textContent = `较前${days}天 ${data[1].replace(/较.*?[增减]/,'')}`;
+    const badge = document.getElementById('card-badge-'+idx);
+    if(badge) badge.textContent = data[2];
+  });
+  toast(`已设置：${s} 至 ${e}，对比 ${cs.toISOString().slice(0,10)} 至 ${ce.toISOString().slice(0,10)}`);
+}
+
+function _applyGlobalPeriod(period) {
+  // 更新环比说明文案
+  const compareLabel = {
+    '近1天': '近1天 vs 前1天（按当前时间进度比例对比）',
+    '近7天': '近7天 vs 前7天同期',
+    '近30天': '近30天 vs 前30天同期',
+  };
+  ['1d','1w','1m','cus'].forEach(k=>{
+    const map = {'1d':'近1天','1w':'近7天','1m':'近30天','cus':'自定义'};
+    const el = document.getElementById('global-pill-'+k);
+    if(el) el.classList.toggle('pill-active', map[k]===period);
+  });
+  // 更新卡片 delta 文案
+  const deltaPrefix = {'近1天':'较前1天同期','近7天':'较前7天','近30天':'较前30天'};
+  [0,1,2,3].forEach(idx => {
+    const data = CARD_DATA[idx]?.[period];
+    if(!data) return;
+    document.getElementById('card-num-'+idx).textContent = data[0];
+    const prefix = deltaPrefix[period] || '';
+    const deltaText = data[1].replace(/较[^\s]+/,prefix);
+    document.getElementById('card-delta-'+idx).textContent = deltaText;
+    const badge = document.getElementById('card-badge-'+idx);
+    if(badge) badge.textContent = data[2];
+  });
+}
+function onCardPeriodChange(idx, period) {
+  const suffixes = {0:'d',1:'d',2:'d',3:'d'};
+  // 更新 pill 高亮
+  ['d','w'].forEach(s => {
+    const key = period==='昨日' ? 'd' : 'w';
+    const el = document.getElementById(`pill-${idx}-${s}`);
+    if(el) { el.classList.toggle('pill-active', s===key); }
+  });
+  const data = CARD_DATA[idx]?.[period];
+  if(!data) return;
+  document.getElementById('card-num-'+idx).textContent = data[0];
+  document.getElementById('card-delta-'+idx).textContent = data[1];
+  const badge = document.getElementById('card-badge-'+idx);
+  if(badge) badge.textContent = data[2];
+}
+// 行样式 helper（同用户明细）
+function rowItem(label, right) {
+  return `<div style="display:flex;align-items:center;padding:13px 0;border-bottom:1px solid #f5f5f5;">
+    <span style="width:130px;font-size:13px;color:#aaa;flex-shrink:0;">${label}</span>
+    <span style="flex:1;font-size:13px;color:#1a1a1a;">${right}</span>
+  </div>`;
+}
+
+function renderTagCardPanel() {
+  const active = allTags().filter(t=>t.showCard);
+  const inactive = allTags().filter(t=>!t.showCard);
+  document.getElementById('activeCardList').innerHTML = active.map(t=>{
+    const c=COLORS[t.color]||COLORS.gray;
+    const lockIcon = `<button onclick="removeTagCard('${t.id}')" style="color:#d1d5db;cursor:pointer;display:flex;align-items:center;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'"><svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>`;
+    return `<div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #f5f5f5;gap:10px;">
+      <svg style="width:12px;height:12px;color:#d1d5db;flex-shrink:0;cursor:grab;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <span style="width:6px;height:6px;border-radius:50%;background:${c.dot};flex-shrink:0;"></span>
+      <span style="flex:1;font-size:13px;color:#1a1a1a;">${t.name}</span>
+      <span style="font-size:11px;color:#aaa;margin-right:8px;">${t.isSystem?'系统标签':'自定义'}</span>
+      ${lockIcon}
+    </div>`;
+  }).join('')||'<div style="font-size:12px;color:#ccc;padding:16px 0;">暂无展示卡片</div>';
+  document.getElementById('inactiveCardList').innerHTML = inactive.map(t=>{
+    const c=COLORS[t.color]||COLORS.gray;
+    return `<div onclick="addTagCard('${t.id}')" style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #f5f5f5;gap:10px;cursor:pointer;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+      <span style="width:6px;height:6px;border-radius:50%;background:${c.dot};flex-shrink:0;"></span>
+      <span style="flex:1;font-size:13px;color:#1a1a1a;">${t.name}</span>
+      <span style="font-size:11px;color:#aaa;margin-right:6px;">${t.isSystem?'系统标签':'自定义'}</span>
+      <span style="font-size:11px;color:#18a058;">+ 添加</span>
+    </div>`;
+  }).join('')||'<div style="font-size:12px;color:#ccc;padding:16px 0;">全部标签已展示</div>';
+}
+function addTagCard(id) {
+  if(allTags().filter(t=>t.showCard).length>=5){toast('最多展示 5 个卡片');return;}
+  const t=allTags().find(x=>x.id===id);
+  if(t){t.showCard=true;renderTagCardPanel();toast(`「${t.name}」已加入卡片`)}
+}
+function removeTagCard(id) {
+  const t=allTags().find(x=>x.id===id);
+  if(t){t.showCard=false;renderTagCardPanel();toast(`「${t.name}」已移出卡片`)}
+}
+// 全局排序表（存储标签 id 的显示顺序，初始化时按 SYS_TAGS 优先级 + customTags 顺序生成）
+let _tagOrder = null;
+function getTagOrder() {
+  if (!_tagOrder) _tagOrder = allTags().map(t => t.id);
+  // 确保新增标签也在里面
+  allTags().forEach(t => { if (!_tagOrder.includes(t.id)) _tagOrder.push(t.id); });
+  return _tagOrder;
+}
+function orderedTags() {
+  const order = getTagOrder();
+  return [...allTags()].sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id));
+}
+
+let _dragSrcId = null;
+
+function renderTagMgr() {
+  const q = (document.getElementById('tagMgrSearch')?.value||'').toLowerCase();
+  const list = orderedTags().filter(t => t.name.toLowerCase().includes(q));
+  const container = document.getElementById('tagMgrList');
+  if (!list.length) { container.innerHTML = '<div style="font-size:12px;color:#ccc;padding:20px 0;text-align:center;">暂无匹配标签</div>'; return; }
+
+  function renderTagRow(t) {
+    const c = COLORS[t.color] || COLORS.gray;
+    const actions = t.isSystem
+      ? `<span style="font-size:11px;color:#aaa;flex-shrink:0;">系统标签</span>`
+      : `<span style="font-size:11px;color:#aaa;margin-right:6px;flex-shrink:0;">自定义</span>
+         <button onclick="event.stopPropagation();deleteTag('${t.id}')" style="color:#d1d5db;cursor:pointer;display:flex;align-items:center;flex-shrink:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">
+           <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+         </button>`;
+    return `<div data-tid="${t.id}" draggable="true"
+      style="display:flex;align-items:center;padding:11px 0;border-bottom:1px solid #f5f5f5;gap:10px;cursor:grab;user-select:none;transition:background .1s;"
+      ondragstart="_onTagDragStart(event,'${t.id}')"
+      ondragover="_onTagDragOver(event)"
+      ondrop="_onTagDrop(event,'${t.id}')"
+      ondragend="_onTagDragEnd(event)"
+      onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+      <svg style="width:13px;height:13px;color:#ccc;flex-shrink:0;cursor:grab;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
+      </svg>
+      <span style="width:6px;height:6px;border-radius:50%;background:${c.dot};flex-shrink:0;"></span>
+      <span style="flex:1;font-size:13px;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.name}</span>
+      <span style="font-size:12px;color:#888;margin-right:6px;flex-shrink:0;">${t.count} 人</span>
+      ${actions}
+    </div>`;
+  }
+
+  // 分组
+  const stageSys    = list.filter(t => t.tagType==='stage'   &&  t.isSystem);
+  const stageCust   = list.filter(t => t.tagType==='stage'   && !t.isSystem);
+  const featureSys  = list.filter(t => t.tagType==='feature' &&  t.isSystem);
+  const featureCust = list.filter(t => (!t.tagType || t.tagType==='feature') && !t.isSystem);
+
+  let html = '';
+
+  // 用户阶段标签分组
+  if (stageSys.length || stageCust.length) {
+    html += `<div style="font-size:11px;color:#aaa;font-weight:500;padding:12px 0 4px;letter-spacing:.5px;">用户阶段标签</div>`;
+    if (stageSys.length) {
+      stageSys.forEach(t => { html += renderTagRow(t); });
+    }
+    if (stageCust.length) {
+      stageCust.forEach(t => { html += renderTagRow(t); });
+    }
+  }
+
+  // 用户特征标签分组
+  if (featureSys.length || featureCust.length) {
+    html += `<div style="font-size:11px;color:#aaa;font-weight:500;padding:12px 0 4px;letter-spacing:.5px;">用户特征标签</div>`;
+    if (featureSys.length) {
+      featureSys.forEach(t => { html += renderTagRow(t); });
+    }
+    if (featureCust.length) {
+      featureCust.forEach(t => { html += renderTagRow(t); });
+    }
+  }
+
+  container.innerHTML = html;
+}
+
+function _onTagDragStart(e, id) {
+  _dragSrcId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.4';
+}
+function _onTagDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.style.background = '#f0fdf4';
+}
+function _onTagDrop(e, targetId) {
+  e.preventDefault();
+  if (_dragSrcId === targetId) return;
+  const order = getTagOrder();
+  const fromIdx = order.indexOf(_dragSrcId);
+  const toIdx   = order.indexOf(targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  order.splice(fromIdx, 1);
+  order.splice(toIdx, 0, _dragSrcId);
+  _tagOrder = order;
+  renderTagMgr();
+  toast('排序已更新');
+}
+function _onTagDragEnd(e) {
+  _dragSrcId = null;
+  renderTagMgr();
+}
+
+function deleteTag(id) {
+  customTags = customTags.filter(t => t.id !== id);
+  if (_tagOrder) _tagOrder = _tagOrder.filter(x => x !== id);
+  renderTagMgr(); renderTagCardPanel(); toast('标签已删除');
+}
+function saveTagSettings() { closeTagSettings(); toast('设置已保存'); }
+
+// ===== 自动规则交互 =====
+const RULE_BEHAVIORS = ['点赞','收藏','评论','关注','进线','对话轮次','留资','转化'];
+let _ruleCondCount = 0;
+
+function toggleAutoRule(on){
+  const body = document.getElementById('autoRuleBody');
+  if(!body) return;
+  body.style.display = on ? 'flex' : 'none';
+  if(on && document.getElementById('ruleCondList').children.length===0){
+    addRuleCond(); // 默认加一条
+  }
+}
+
+function addRuleCond(){
+  const list = document.getElementById('ruleCondList');
+  const idx = _ruleCondCount++;
+  const isFirst = list.children.length === 0;
+
+  const wrapper = document.createElement('div');
+  wrapper.dataset.condIdx = idx;
+  wrapper.style.cssText = 'display:flex;flex-direction:column;gap:0;';
+
+  // AND/OR 连接符（第一条不显示）
+  if(!isFirst){
+    const connector = document.createElement('div');
+    connector.style.cssText = 'display:flex;align-items:center;gap:0;padding:4px 0;';
+    connector.innerHTML = `
+      <button data-rel="AND" onclick="toggleCondRel(this,'AND',${idx})"
+        style="font-size:11px;padding:3px 10px;border-radius:6px 0 0 6px;border:1px solid #e5e7eb;background:#1a1a1a;color:#fff;cursor:pointer;font-weight:600;" id="rel-and-${idx}">且</button>
+      <button data-rel="OR" onclick="toggleCondRel(this,'OR',${idx})"
+        style="font-size:11px;padding:3px 10px;border-radius:0 6px 6px 0;border:1px solid #e5e7eb;border-left:none;background:#fff;color:#888;cursor:pointer;" id="rel-or-${idx}">或</button>`;
+    wrapper.appendChild(connector);
+  }
+
+  // 条件块
+  const block = document.createElement('div');
+  block.style.cssText = 'background:#f9fafb;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;border:1px solid #f0f0f0;';
+  block.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+      <span style="font-size:11px;font-weight:600;color:#888;">条件 ${list.children.length+1}</span>
+      <button onclick="removeRuleCond(this)" style="font-size:12px;color:#ccc;background:none;border:none;cursor:pointer;padding:0 2px;" title="删除">×</button>
+    </div>
+    <!-- 关系：包含 / 不包含 -->
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:11px;color:#888;white-space:nowrap;">关系</span>
+      <select class="rule-rel-sel" style="font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;background:#fff;outline:none;">
+        <option value="include">包含</option>
+        <option value="exclude">不包含</option>
+      </select>
+    </div>
+    <!-- 行为类型 -->
+    <div>
+      <div style="font-size:11px;color:#888;margin-bottom:6px;">行为类型（可多选）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;" class="bchip-group"></div>
+    </div>
+    <!-- 频次/轮数 -->
+    <div style="display:flex;align-items:center;gap:6px;" class="rule-freq-row">
+      <span style="font-size:11px;color:#888;white-space:nowrap;">次数/轮数</span>
+      <select class="rule-freq-op" style="font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;background:#fff;outline:none;">
+        <option value="gte">≥</option><option value="lte">≤</option><option value="eq">=</option><option value="any">不限</option>
+      </select>
+      <input type="number" min="1" value="1" class="rule-freq-val" style="width:52px;font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;outline:none;text-align:center;">
+      <span style="font-size:12px;color:#555;" class="rule-freq-unit">次</span>
+    </div>
+    <!-- 行为时间 -->
+    <div>
+      <div style="font-size:11px;color:#888;margin-bottom:6px;">行为时间</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <select class="rule-time-type" style="font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;background:#fff;outline:none;">
+          <option value="recent">近</option>
+          <option value="range">自定义区间</option>
+          <option value="any">不限</option>
+        </select>
+        <div class="rule-time-recent" style="display:flex;align-items:center;gap:4px;">
+          <input type="number" min="1" max="365" value="30" class="rule-recent-days" style="width:52px;font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:5px 8px;outline:none;text-align:center;">
+          <span style="font-size:12px;color:#555;">天内</span>
+        </div>
+        <div class="rule-time-range" style="display:none;align-items:center;gap:4px;">
+          <input type="date" class="rule-range-start" style="font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:4px 6px;outline:none;">
+          <span style="font-size:12px;color:#aaa;">至</span>
+          <input type="date" class="rule-range-end" style="font-size:12px;border:1px solid #e5e7eb;border-radius:7px;padding:4px 6px;outline:none;">
+        </div>
+      </div>
+    </div>`;
+
+  // 渲染行为 chips
+  const chipGroup = block.querySelector('.bchip-group');
+  RULE_BEHAVIORS.forEach(b=>{
+    const chip = document.createElement('div');
+    chip.className = '_bchip';
+    chip.dataset.b = b;
+    chip.textContent = b;
+    chip.style.cssText = 'font-size:12px;padding:4px 10px;border-radius:20px;border:1px solid #e5e7eb;background:#fff;color:#555;cursor:pointer;';
+    chip.onclick = ()=>toggleBChip(chip);
+    chipGroup.appendChild(chip);
+  });
+
+  // 时间类型切换
+  block.querySelector('.rule-time-type').addEventListener('change', function(){
+    const recent = block.querySelector('.rule-time-recent');
+    const range  = block.querySelector('.rule-time-range');
+    recent.style.display = this.value==='recent' ? 'flex' : 'none';
+    range.style.display  = this.value==='range'  ? 'flex' : 'none';
+  });
+
+  // 频次 op 切换（选「不限」时隐藏数值输入）
+  block.querySelector('.rule-freq-op').addEventListener('change', function(){
+    const valInput = block.querySelector('.rule-freq-val');
+    const unit = block.querySelector('.rule-freq-unit');
+    const hide = this.value==='any';
+    valInput.style.display = hide ? 'none' : '';
+    unit.style.display     = hide ? 'none' : '';
+  });
+
+  wrapper.appendChild(block);
+  list.appendChild(wrapper);
+  _renumberConds();
+}
+
+function removeRuleCond(btn){
+  const wrapper = btn.closest('[data-cond-idx]');
+  if(!wrapper) return;
+  const list = document.getElementById('ruleCondList');
+  // 第一条：如果后面还有条件，把第二条的连接符去掉
+  if(wrapper === list.firstElementChild && list.children.length > 1){
+    const second = list.children[1];
+    const connector = second.querySelector('button[data-rel]');
+    if(connector) connector.closest('div').remove();
+  }
+  wrapper.remove();
+  _renumberConds();
+}
+
+function _renumberConds(){
+  document.querySelectorAll('#ruleCondList [data-cond-idx]').forEach((w,i)=>{
+    const label = w.querySelector('span');
+    if(label && label.textContent.startsWith('条件')) label.textContent = '条件 '+(i+1);
+  });
+}
+
+function toggleCondRel(btn, rel, idx){
+  const andBtn = document.getElementById('rel-and-'+idx);
+  const orBtn  = document.getElementById('rel-or-'+idx);
+  if(!andBtn||!orBtn) return;
+  if(rel==='AND'){
+    andBtn.style.background='#1a1a1a'; andBtn.style.color='#fff';
+    orBtn.style.background='#fff';    orBtn.style.color='#888';
+  } else {
+    orBtn.style.background='#1a1a1a'; orBtn.style.color='#fff';
+    andBtn.style.background='#fff';   andBtn.style.color='#888';
+  }
+}
+
+function toggleBChip(el){
+  el.classList.toggle('_bchip-sel');
+  if(el.classList.contains('_bchip-sel')){
+    el.style.borderColor='#18a058'; el.style.color='#18a058'; el.style.background='#f0fdf4';
+  } else {
+    el.style.borderColor='#e5e7eb'; el.style.color='#555'; el.style.background='#fff';
+  }
+}
+
+// ===== 新建标签 =====
+let _selectedTagType = 'feature';
+function selectTagType(type) {
+  _selectedTagType = type;
+  ['feature','stage'].forEach(t=>{
+    const btn = document.getElementById('tagTypeBtn-'+t);
+    if(!btn) return;
+    const active = t===type;
+    btn.style.background = active?'#1a1a1a':'#fff';
+    btn.style.color = active?'#fff':'#555';
+    btn.style.borderColor = active?'#1a1a1a':'#e5e7eb';
+  });
+  // 自动规则区块只在 stage 时显示
+  const ruleSection = document.getElementById('autoRuleSection');
+  if(ruleSection) ruleSection.style.display = type==='stage' ? 'block' : 'none';
+}
+function openCreateTag() {
+  document.getElementById('createTagModal').style.display='flex';
+  document.getElementById('newTagName').value='';
+  document.getElementById('newTagLen').textContent='0/10';
+  selectedTagColor='green';
+  document.querySelectorAll('#tagColorPicker .cdot').forEach(d=>d.classList.toggle('sel',d.dataset.c==='green'));
+  selectTagType('feature');
+  document.getElementById('autoRuleToggle').checked = false;
+  toggleAutoRule(false);
+}
+function closeCreateTag() { document.getElementById('createTagModal').style.display='none'; }
+function selTagColor(el) {
+  document.querySelectorAll('#tagColorPicker .cdot').forEach(d=>d.classList.remove('sel'));
+  el.classList.add('sel'); selectedTagColor=el.dataset.c;
+}
+function setTagMode(m) {
+  document.getElementById('modeM').style.borderColor=m==='manual'?'#1a1a1a':'#e5e7eb';
+  document.getElementById('modeR').style.borderColor=m==='rule'?'#1a1a1a':'#e5e7eb';
+}
+function confirmCreateTag() {
+  const name=document.getElementById('newTagName').value.trim();
+  if(!name){alert('请填写标签名称');return;}
+  if(allTags().some(t=>t.name===name)){alert('标签名已存在');return;}
+  const addCard=document.getElementById('addToCardToggle').checked;
+  const newId = 'c'+Date.now();
+  customTags.push({id:newId,name,color:selectedTagColor,isSystem:false,showCard:addCard&&allTags().filter(t=>t.showCard).length<5,count:0,delta:'+0%',tagType:_selectedTagType});
+  if(_tagOrder) _tagOrder.push(newId);
+  closeCreateTag();renderTagMgr();renderTagCardPanel();
+  toast(`标签「${name}」创建成功`);
+}
+
+// ===== AI 对话 =====
+const AI_ANSWERS = {
+  '近7天哪类客户增长最快？': '近7天**潜在客户**增长最快，净增 42 人（+14%）。主要来源为广告投放（占比 58%）和笔记评论（占比 31%）。建议在 24 小时内对新增潜客发起首次私信激活。',
+  '流失风险名单有哪些客户？': '当前有 **23 位客户**存在流失风险（7 天未互动）：\n• 绿索在夜理（最后互动 2026-05-06）\n• 我看你像1012个人（最后互动 2026-05-07）\n• 灰白（最后互动 2026-05-03）\n…及其他 20 位。建议开启自动唤醒话术，可挽回约 35% 的流失客户。',
+  '查看23位流失风险客户名单': '以下是当前 **23 位流失风险客户**（7 天未互动，按最后互动时间排序）：\n\n① 灰白 — 14天未互动（最高风险）\n② 绿索在夜理 — 9天未互动\n③ 我看你像1012个人 — 8天未互动\n…等 20 位。\n\n建议立即触发「流失唤醒」Skill，发送专属召回话术，历史挽回率约 **35%**。',
+  '本周转化机会客户有哪些？': '本周预计 **18 位客户**可能成交，以下 3 位优先级最高：\n• 小红书69FB24AC — 互动 12 次，已私信，高意向\n• 麦克善 — KOS推荐来源，互动 8 次，关注中\n• 小红书671C9221 — 评论互动活跃\n\n建议本周内发起定制化成交邀约话术。',
+  '如何做好数据回传？': '数据回传能让广告平台学习你的转化特征，精准扩展相似人群，通常可有效提升投放效率。\n\n推荐方式：\n① **Excel 上传** — 适合手动整理，每周定期操作\n② **API 对接** — 自动化程度高，实时回传\n③ **手动标注** — 适合单条线索快速标记\n\n当前有 12 条未回传，<a href="#" onclick="openReturnPanel();return false;" style="color:#18a058;font-weight:600;">去回传 →</a>',
+  '这里的数据口径是怎么定义的？': '以下是客户管理页面核心指标的口径说明：\n\n• **进线客户** — 通过私信/评论/表单等任意渠道发起过互动的用户，T+1 更新\n• **潜在客户** — 进线后有明确意向信号（多次互动/主动询价），但未成交\n• **流失客户** — 超过 7 天无互动且未转化的客户\n• **转化客户** — 已填写转化结果（预约/试听/成交）的客户\n• **最新进线时间** — 该客户最近一次从任意渠道进线的时间\n• **最近开口时间** — 客户最近一次主动发起私信的时间\n• **最近留资时间** — 客户最近一次提交表单/留下联系方式的时间\n\n如需查询其他字段口径，请直接提问 😊',
+  '如何提升私信跟进率？': '当前私信跟进率 **34%**，低于行业均值（约 60%）。主要原因：\n\n① 新进线客户 24 小时内未跟进 — 占未跟进量 **52%**\n② 工作时间外进线无人响应 — 占 **31%**\n③ 客户主动评论未转私信 — 占 **17%**\n\n建议：\n• 开启「私信自动回复」缩短响应时间\n• 设置进线客户 24 小时内提醒\n• 对评论客户批量发起私信邀约',
+};
+function openAI() {
+  _openPanel('aiMask','aiPanel');
+  if(!document.getElementById('chatMessages').children.length)
+    appendAIMsg('你好！我是你的 AI 经营助手，已分析当前 <strong>1,393</strong> 位客户数据。有什么想了解的？');
+}
+function openAIWithReport() {
+  _openPanel('aiMask','aiPanel');
+  const msgs = document.getElementById('chatMessages');
+  if(!msgs.querySelector('[data-report]')) {
+    const today = new Date().toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+    const el = document.createElement('div');
+    el.setAttribute('data-report','1');
+    el.style.cssText='display:flex;align-items:flex-start;gap:8px;';
+    const text = `📋 <strong>${today} 客户经营诊断报告</strong><br><br>📈 <strong>高价值潜客</strong>近 7 天增长 12%，转化机会较好<br>⚠️ <strong>流失风险客户 23 位</strong>，建议本周内跟进唤醒<br>💡 <strong>私信跟进率</strong>仅 34%，低于行业均值，建议提升<br><br>❕ 检测到近 T-1 日转化数据未回传，建议及时回传以获取更深度分析`;
+    el.innerHTML=`<div style="width:24px;height:24px;background:#18a058;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;"><svg style="width:12px;height:12px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div><div style="background:#f3f4f6;border-radius:12px 12px 12px 4px;padding:10px 12px;font-size:12px;color:#1a1a1a;line-height:1.6;max-width:260px;">${text}</div>`;
+    msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight;
+  }
+  // 下钻引导气泡
+  setTimeout(()=>{
+    const msgs = document.getElementById('chatMessages');
+    const el = document.createElement('div');
+    el.style.cssText = 'display:flex;align-items:flex-start;gap:8px;';
+    el.innerHTML = `<div style="width:24px;height:24px;background:#18a058;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;"><svg style="width:12px;height:12px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div>
+    <div style="max-width:270px;">
+      <div style="background:#f3f4f6;border-radius:12px 12px 12px 4px;padding:10px 12px;font-size:12px;color:#555;margin-bottom:8px;">你想深入了解哪个问题？</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button onclick="sendQuick('查看23位流失风险客户名单')" style="text-align:left;font-size:12px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;background:#fff;color:#333;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.borderColor='#18a058';this.style.color='#15803d'" onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#333'">
+          <span>⚠️ 查看流失风险名单（23位）</span><span style="color:#aaa;font-size:11px;">→</span>
+        </button>
+        <button onclick="sendQuick('本周转化机会客户有哪些？')" style="text-align:left;font-size:12px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;background:#fff;color:#333;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.borderColor='#18a058';this.style.color='#15803d'" onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#333'">
+          <span>💰 转化机会客户有哪些？</span><span style="color:#aaa;font-size:11px;">→</span>
+        </button>
+        <button onclick="sendQuick('如何提升私信跟进率？')" style="text-align:left;font-size:12px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;background:#fff;color:#333;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.borderColor='#18a058';this.style.color='#15803d'" onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#333'">
+          <span>💡 如何提升私信跟进率？</span><span style="color:#aaa;font-size:11px;">→</span>
+        </button>
+        <button onclick="openReturnPanel();closeAI();" style="text-align:left;font-size:12px;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;background:#fffbeb;color:#92400e;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" onmouseover="this.style.background='#fef3c7'" onmouseout="this.style.background='#fffbeb'">
+          <span>❕ 现在去回传转化数据</span><span style="color:#f59e0b;font-size:11px;">→</span>
+        </button>
+      </div>
+    </div>`;
+    msgs.appendChild(el);
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 600);
+}
+function openAIWithInsight(type) {
+  _openPanel('aiMask','aiPanel');
+  const msgs = {
+    trend:'近 7 天高价值潜客增长 <strong>+15 人（+12%）</strong>，主要来源为广告投放（58%）和 KOS 推荐（23%）。建议加大广告预算并优化 KOS 话术。',
+    risk:'发现 <strong>23 位客户</strong>有流失风险，其中 8 位已超过 14 天未互动。建议立即启用「流失唤醒」Skill，发送定制化召回话术。',
+    convert:'本周预计 <strong>18 位客户</strong>可能成交，优先跟进：小红书69FB24AC（互动 12 次）、麦克善（KOS来源）、绿索在夜理（活跃老客）。',
+  };
+  appendAIMsg(msgs[type]);
+}
+function closeAI() { _closePanel('aiMask','aiPanel'); }
+function _openPanel(maskId,panelId) {
+  document.getElementById(maskId).style.display='block';
+  document.getElementById(panelId).style.transform='translateX(0)';
+}
+function _closePanel(maskId,panelId) {
+  document.getElementById(maskId).style.display='none';
+  document.getElementById(panelId).style.transform='translateX(100%)';
+}
+let aiWelcomed = false;
+function appendAIMsg(text) {
+  const msgs=document.getElementById('chatMessages');
+  const el=document.createElement('div');
+  el.style.cssText='display:flex;align-items:flex-start;gap:8px;';
+  const formatted=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  el.innerHTML=`<div style="width:24px;height:24px;background:#18a058;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;"><svg style="width:12px;height:12px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div><div style="background:#f3f4f6;border-radius:12px 12px 12px 4px;padding:10px 12px;font-size:12px;color:#1a1a1a;line-height:1.6;max-width:260px;">${formatted}</div>`;
+  msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight;
+}
+function sendQuick(q) {
+  const msgs=document.getElementById('chatMessages');
+  const uel=document.createElement('div');
+  uel.style.cssText='display:flex;justify-content:flex-end;';
+  uel.innerHTML=`<div style="background:#1a1a1a;color:#fff;border-radius:12px 12px 4px 12px;padding:8px 12px;font-size:12px;max-width:220px;">${q}</div>`;
+  msgs.appendChild(uel); msgs.scrollTop=msgs.scrollHeight;
+  // 打字效果
+  const tid=document.createElement('div'); tid.id='typing-'+Date.now(); tid.style.cssText='display:flex;align-items:flex-start;gap:8px;';
+  tid.innerHTML=`<div style="width:24px;height:24px;background:#18a058;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;"><svg style="width:12px;height:12px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div><div style="background:#f3f4f6;border-radius:12px 12px 12px 4px;padding:10px 12px;font-size:20px;color:#aaa;">···</div>`;
+  msgs.appendChild(tid); msgs.scrollTop=msgs.scrollHeight;
+  setTimeout(()=>{
+    tid.remove();
+    appendAIMsg(AI_ANSWERS[q]||'正在为你分析，请稍候…');
+  },1100);
+}
+function sendChat() {
+  const input=document.getElementById('chatInput');
+  const q=input.value.trim(); if(!q)return;
+  input.value=''; sendQuick(q);
+}
+
+// ===== 回传面板 =====
+function openReturnPanel() { _openPanel('retMask','retPanel'); }
+function closeReturnPanel() { _closePanel('retMask','retPanel'); }
+let retMethod='excel';
+
+function selectReturnMethod(m) {
+  retMethod = m;
+  ['excel','api','manual'].forEach(k=>{
+    const el = document.getElementById('ret-'+k);
+    el.style.borderColor = k===m ? '#18a058' : '#e5e7eb';
+    el.style.background   = k===m ? '#f0fdf4' : '#fff';
+    // 勾选图标
+    const chk = el.querySelector('.ret-chk');
+    if(chk) chk.style.display = k===m ? 'flex' : 'none';
+    // 展开详情
+    const det = document.getElementById('ret-'+k+'-detail');
+    if(det) det.style.display = k===m ? 'block' : 'none';
+  });
+  // 重置解析结果
+  document.getElementById('ret-parse-result').style.display = 'none';
+  document.getElementById('ret-parse-result').innerHTML = '';
+  // 按钮文案
+  const btn = document.getElementById('ret-submit-btn');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.display = '';
+  // 清除上次结果卡片
+  const card = document.getElementById('retResultCard');
+  if(card) card.remove();
+  if(m==='manual'){
+    btn.textContent = '开始手动标注';
+    btn.style.background = '#1a1a1a';
+  } else if(m==='api'){
+    btn.style.display = 'none';
+  } else {
+    btn.textContent = '提交回传';
+    btn.style.background = '#18a058';
+  }
+}
+
+function submitReturn() {
+  if(retMethod === 'manual') {
+    // 关闭侧边栏，筛选转化结果为空的客户
+    closeReturnPanel();
+    setTimeout(() => {
+      filterEmptyConvert();
+    }, 300);
+  } else if(retMethod === 'api') {
+    toast('跳转线索推送 API 文档…');
+  } else {
+    // Excel 回传：显示处理中 → 结果
+    const submitBtn = document.getElementById('ret-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '提交中…';
+    submitBtn.style.opacity = '0.6';
+    setTimeout(() => {
+      submitBtn.style.display = 'none';
+      _showReturnResult();
+    }, 1200);
+  }
+}
+
+function _showReturnResult() {
+  // 在侧边栏底部注入结果卡片
+  const panel = document.getElementById('retPanel');
+  const existing = document.getElementById('retResultCard');
+  if(existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.id = 'retResultCard';
+  card.style.cssText = 'padding:16px;border-top:3px solid #18a058;background:#fff;';
+  card.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <div style="width:28px;height:28px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg style="width:14px;height:14px;color:#18a058;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#1a1a1a;">回传成功</div>
+        <div style="font-size:11px;color:#aaa;margin-top:1px;">已提交 12 条数据，处理完成</div>
+      </div>
+    </div>
+    <!-- 匹配率概览 -->
+    <div style="background:#f9fafb;border-radius:10px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:10px;">回传匹配率</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="flex:1;height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
+          <div style="width:83%;height:100%;background:#18a058;border-radius:99px;transition:width .8s;"></div>
+        </div>
+        <span style="font-size:14px;font-weight:700;color:#18a058;white-space:nowrap;">83%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+        <div style="text-align:center;background:#fff;border-radius:8px;padding:8px 4px;border:1px solid #e5e7eb;">
+          <div style="font-size:16px;font-weight:700;color:#1a1a1a;">12</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">提交总量</div>
+        </div>
+        <div style="text-align:center;background:#f0fdf4;border-radius:8px;padding:8px 4px;border:1px solid #bbf7d0;">
+          <div style="font-size:16px;font-weight:700;color:#15803d;">10</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">匹配成功</div>
+        </div>
+        <div style="text-align:center;background:#fef2f2;border-radius:8px;padding:8px 4px;border:1px solid #fecaca;">
+          <div style="font-size:16px;font-weight:700;color:#b91c1c;">2</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">未匹配</div>
+        </div>
+      </div>
+    </div>
+    <!-- 未匹配原因 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:6px;">未匹配原因</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:6px 8px;background:#fef2f2;border-radius:6px;">
+          <span style="color:#555;">手机号无法关联至平台用户</span>
+          <span style="color:#b91c1c;font-weight:600;">1 条</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;padding:6px 8px;background:#fef2f2;border-radius:6px;">
+          <span style="color:#555;">用户ID格式不正确</span>
+          <span style="color:#b91c1c;font-weight:600;">1 条</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('retResultCard').remove();document.getElementById('ret-submit-btn').style.display='';document.getElementById('ret-submit-btn').disabled=false;document.getElementById('ret-submit-btn').textContent='提交回传';document.getElementById('ret-submit-btn').style.opacity='1';"
+        style="flex:1;font-size:12px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 0;background:#fff;color:#555;cursor:pointer;">重新回传</button>
+      <button onclick="closeReturnPanel()"
+        style="flex:1;font-size:12px;border-radius:8px;padding:7px 0;background:#1a1a1a;color:#fff;cursor:pointer;border:none;">完成</button>
+    </div>
+  `;
+  panel.appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+// 筛选转化结果为空的客户
+let emptyConvertFilter = false;
+function filterEmptyConvert() {
+  emptyConvertFilter = true;
+  renderList();
+  // 显示提示条
+  const bar = document.getElementById('cardFilterBar');
+  document.getElementById('cardFilterLabel').innerHTML = '转化结果未填写 <span style="font-size:11px;font-weight:400;color:#6b7280;">（共 '+ customers.filter(c=>!c.convert).length +' 条）</span>';
+  bar.style.display = 'flex';
+  bar.style.background = '#fffbeb';
+  bar.style.borderColor = '#fde68a';
+  bar.querySelector('svg').style.color = '#f59e0b';
+  // 修改清除按钮
+  const clearBtn = bar.querySelector('span[onclick]');
+  clearBtn.setAttribute('onclick','clearEmptyConvertFilter()');
+  toast('已筛选 ' + customers.filter(c=>!c.convert).length + ' 条未填写转化结果的客户');
+}
+function clearEmptyConvertFilter() {
+  emptyConvertFilter = false;
+  clearCardFilter();
+  const bar = document.getElementById('cardFilterBar');
+  bar.style.background = '#f0fdf4';
+  bar.style.borderColor = '#bbf7d0';
+  bar.querySelector('svg').style.color = '#18a058';
+}
+
+// Excel 智能识别
+function handleExcelUpload(input) {
+  if(!input.files || !input.files[0]) return;
+  const fname = input.files[0].name;
+  const parseEl = document.getElementById('ret-parse-result');
+  parseEl.style.display = 'block';
+  parseEl.innerHTML = `<div style="font-size:12px;color:#555;display:flex;align-items:center;gap:6px;padding:8px 0;">
+    <div style="width:14px;height:14px;border:2px solid #18a058;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;"></div>
+    正在智能识别字段映射…
+  </div>`;
+  // 模拟解析延迟
+  setTimeout(() => {
+    const mappings = [
+      { src: 'user_id',     dst: '用户ID',   ok: true },
+      { src: 'phone',       dst: '手机号',   ok: true },
+      { src: 'result',      dst: '转化结果', ok: true },
+      { src: 'amount',      dst: '成交金额', ok: true },
+      { src: 'deal_date',   dst: '成交时间', ok: true },
+      { src: 'order_no',    dst: '订单号',   ok: false, reason: '列名未匹配，请确认是否为"order_id"' },
+    ];
+    const ok    = mappings.filter(m=>m.ok);
+    const fails = mappings.filter(m=>!m.ok);
+    parseEl.innerHTML = `
+      <div style="font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:8px;">字段识别结果 — <span style="color:#18a058;">${ok.length}</span> 个成功，<span style="color:${fails.length?'#ef4444':'#18a058'};">${fails.length}</span> 个失败</div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:${fails.length?'10px':'0'};">
+        ${ok.map(m=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#555;background:#f0fdf4;border-radius:6px;padding:5px 8px;">
+          <svg style="width:12px;height:12px;color:#18a058;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          <code style="background:#dcfce7;border-radius:4px;padding:1px 5px;color:#15803d;">${m.src}</code>
+          <span style="color:#aaa;">→</span>
+          <span>${m.dst}</span>
+        </div>`).join('')}
+      </div>
+      ${fails.length ? `<div style="font-size:11px;font-weight:500;color:#b91c1c;margin-bottom:6px;">解析失败原因</div>
+      ${fails.map(m=>`<div style="display:flex;align-items:flex-start;gap:6px;font-size:11px;color:#555;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:6px 8px;">
+          <svg style="width:12px;height:12px;color:#ef4444;flex-shrink:0;margin-top:1px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div><code style="background:#fee2e2;border-radius:4px;padding:1px 5px;color:#b91c1c;">${m.src}</code> — ${m.reason}</div>
+      </div>`).join('')}` : ''}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e7eb;font-size:11px;color:#888;">文件：${fname}，识别到 <strong>12</strong> 条待回传数据</div>
+      ${fails.length ? `<label style="display:flex;align-items:center;gap:6px;margin-top:10px;cursor:pointer;font-size:12px;color:#555;">
+        <input type="checkbox" id="skipFailCheck" style="accent-color:#18a058;width:14px;height:14px;">
+        允许忽略失败条目，直接提交成功匹配的数据
+      </label>` : ''}
+    `;
+    document.getElementById('ret-submit-btn').textContent = '确认提交';
+    document.getElementById('ret-submit-btn').style.background = '#18a058';
+  }, 1600);
+}
+
+// ===== 导出面板 =====
+let _expType='excel', _expRange='all', _expAllSelected=true;
+
+function openExportPanel() {
+  const exist=document.getElementById('exportModal');
+  if(exist){exist.remove();return;}
+  const modal=document.createElement('div');
+  modal.id='exportModal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:700;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML=`
+  <div style="background:#fff;border-radius:14px;width:460px;box-shadow:0 16px 48px rgba(0,0,0,.15);overflow:hidden;" onclick="event.stopPropagation()">
+    <!-- 标题 + 步骤指示 -->
+    <div style="padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f0f0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="font-size:15px;font-weight:700;color:#1a1a1a;">导出数据</div>
+        <div id="exp-step-indicator" style="font-size:11px;color:#aaa;">步骤 1/2</div>
+      </div>
+      <button onclick="document.getElementById('exportModal').remove()" style="color:#aaa;cursor:pointer;font-size:20px;line-height:1;background:none;border:none;">×</button>
+    </div>
+    <!-- Step 1: 仅选择导出方式 -->
+    <div id="exp-step1" style="padding:20px 24px 24px;">
+      <div style="font-size:13px;color:#555;margin-bottom:14px;font-weight:500;">请选择导出方式</div>
+      <div style="display:flex;gap:10px;">
+        <div id="exp-type-excel" onclick="selectExportType('excel')"
+          style="flex:1;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .15s;">
+          <svg style="width:28px;height:28px;color:#888;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <div style="text-align:center;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;">Excel 下载</div>
+            <div style="font-size:11px;color:#aaa;margin-top:3px;">导出 .xlsx 到本地</div>
+          </div>
+          <div style="width:16px;height:16px;border-radius:50%;border:2px solid #d1d5db;background:#fff;margin-top:2px;" id="exp-dot-excel"></div>
+        </div>
+        <div id="exp-type-api" onclick="selectExportType('api')"
+          style="flex:1;border:1.5px solid #e5e7eb;border-radius:10px;padding:16px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .15s;">
+          <svg style="width:28px;height:28px;color:#888;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <div style="text-align:center;">
+            <div style="font-size:13px;font-weight:600;color:#1a1a1a;">API 推送</div>
+            <div style="font-size:11px;color:#aaa;margin-top:3px;">接收实时数据推送</div>
+          </div>
+          <div style="width:16px;height:16px;border-radius:50%;border:2px solid #d1d5db;background:#fff;margin-top:2px;" id="exp-dot-api"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Step 2: 详细配置（初始隐藏） -->
+    <div id="exp-step2" style="display:none;">
+      <div id="exp-excel-body">
+        <div style="padding:4px 24px 10px;">
+          <div style="font-size:12px;color:#888;margin-bottom:10px;">选择导出范围</div>
+          <div style="display:flex;gap:10px;">
+            <div id="exp-range-all" onclick="selectExportRange('all')"
+              style="flex:1;border:1.5px solid #1a1a1a;border-radius:9px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px;">
+              <div style="width:15px;height:15px;border-radius:50%;border:2px solid #1a1a1a;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;" id="exp-rdot-all"><div style="width:5px;height:5px;border-radius:50%;background:#fff;"></div></div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:#1a1a1a;">当前筛选结果</div>
+                <div style="font-size:11px;color:#aaa;margin-top:2px;">导出列表筛选条件下的全部数据</div>
+                <div style="margin-top:6px;"><span onclick="goToFilter()" style="font-size:11px;color:#18a058;cursor:pointer;text-decoration:underline;text-underline-offset:2px;">去筛选 →</span></div>
+              </div>
+            </div>
+            <div id="exp-range-sel" onclick="selectExportRange('sel')"
+              style="flex:1;border:1.5px solid #e5e7eb;border-radius:9px;padding:10px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:8px;">
+              <div style="width:15px;height:15px;border-radius:50%;border:2px solid #d1d5db;background:#fff;flex-shrink:0;margin-top:2px;" id="exp-rdot-sel"></div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:#1a1a1a;">已勾选数据</div>
+                <div style="font-size:11px;color:#aaa;margin-top:2px;">仅导出列表中手动勾选的客户（<span id="exp-sel-count">${selectedRows.size}</span> 条）</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:4px 24px 16px;">
+          <div style="font-size:12px;color:#888;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+            <span>选择导出字段</span>
+            <span onclick="toggleAllExportFields()" style="color:#18a058;cursor:pointer;" id="exp-field-toggle">取消全选</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;" id="exp-fields">
+            ${['用户昵称','用户ID','归属账号','最新进线时间','最近开口时间','最近留资时间','转化结果','电话','微信','留资方式','客户标签'].map(f=>`<div class="_exp-field-tag _exp-selected" data-field="${f}" onclick="toggleExportField(this)" style="font-size:12px;padding:4px 10px;border-radius:20px;border:1.5px solid #18a058;background:#fff;color:#18a058;cursor:pointer;">${f}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div id="exp-api-body" style="display:none;padding:4px 24px 20px;">
+        <div style="display:flex;flex-direction:column;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+          <div style="display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid #f0f0f0;">
+            <span style="font-size:12px;color:#888;width:140px;flex-shrink:0;">数据推送示例</span>
+            <span style="font-size:12px;color:#3b82f6;cursor:pointer;" onclick="toast('开始下载示例文件…')">下载查看</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid #f0f0f0;">
+            <span style="font-size:12px;color:#888;width:140px;flex-shrink:0;">API Token</span>
+            <span id="exp-token-val" style="font-size:12px;color:#1a1a1a;flex:1;letter-spacing:1px;">••••••••••••••</span>
+            <span onclick="toggleApiToken()" style="font-size:12px;color:#3b82f6;cursor:pointer;">查看</span>
+            <span style="font-size:12px;color:#e5e7eb;margin:0 8px;">|</span>
+            <span onclick="copyApiToken()" style="font-size:12px;color:#3b82f6;cursor:pointer;">复制</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:13px 16px;">
+            <span style="font-size:12px;color:#888;width:140px;flex-shrink:0;">Post 消息接收地址</span>
+            <input id="exp-webhook-url" type="text" placeholder="请输入接收地址" value="www.baidu.com1234"
+              style="flex:1;font-size:12px;border:1px solid #e5e7eb;border-radius:6px;padding:5px 10px;outline:none;color:#1a1a1a;"
+              onfocus="this.style.borderColor='#1a1a1a'" onblur="this.style.borderColor='#e5e7eb'">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 底部按钮 -->
+    <div style="padding:14px 24px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f0f0f0;">
+      <button id="exp-back-btn" onclick="exportGoBack()" style="display:none;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#555;cursor:pointer;">← 返回</button>
+      <div style="margin-left:auto;display:flex;gap:8px;">
+        <button onclick="document.getElementById('exportModal').remove()" style="font-size:13px;padding:8px 20px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;color:#555;cursor:pointer;">取消</button>
+        <button id="exp-confirm-btn" onclick="exportNextOrSubmit()" style="font-size:13px;padding:8px 20px;border-radius:8px;border:none;background:#d1d5db;color:#fff;cursor:not-allowed;" disabled>下一步</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click',()=>modal.remove());
+  _expType=null; _expRange='all'; _expAllSelected=true; _expStep=1;
+}
+
+let _expStep=1;
+
+function exportNextOrSubmit(){
+  if(_expStep===1){
+    // 进入第二步
+    _expStep=2;
+    document.getElementById('exp-step1').style.display='none';
+    document.getElementById('exp-step2').style.display='';
+    document.getElementById('exp-step-indicator').textContent='步骤 2/2';
+    document.getElementById('exp-back-btn').style.display='';
+    const btn=document.getElementById('exp-confirm-btn');
+    btn.disabled=false;btn.style.cursor='pointer';
+    btn.style.background='#1a1a1a';
+    btn.textContent=_expType==='api'?'保存配置':'确认导出';
+  } else {
+    doExport();
+  }
+}
+
+function exportGoBack(){
+  _expStep=1;
+  document.getElementById('exp-step2').style.display='none';
+  document.getElementById('exp-step1').style.display='';
+  document.getElementById('exp-step-indicator').textContent='步骤 1/2';
+  document.getElementById('exp-back-btn').style.display='none';
+  const btn=document.getElementById('exp-confirm-btn');
+  btn.textContent='下一步';
+}
+
+function selectExportType(v){
+  _expType=v;
+  ['excel','api'].forEach(k=>{
+    const wrap=document.getElementById('exp-type-'+k);
+    const dot=document.getElementById('exp-dot-'+k);
+    const svg=wrap&&wrap.querySelector('svg');
+    if(k===v){
+      wrap.style.borderColor='#1a1a1a';wrap.style.background='#fafafa';
+      dot.style.borderColor='#1a1a1a';dot.style.background='#1a1a1a';
+      dot.innerHTML='<div style="width:5px;height:5px;border-radius:50%;background:#fff;"></div>';
+      if(svg) svg.style.color='#1a1a1a';
+    } else {
+      wrap.style.borderColor='#e5e7eb';wrap.style.background='#fff';
+      dot.style.borderColor='#d1d5db';dot.style.background='#fff';dot.innerHTML='';
+      if(svg) svg.style.color='#aaa';
+    }
+  });
+  // Step1 激活「下一步」按钮
+  if(_expStep===1){
+    const btn=document.getElementById('exp-confirm-btn');
+    if(btn){btn.disabled=false;btn.style.cursor='pointer';btn.style.background='#1a1a1a';}
+  }
+  // Step2 同步切换 body（返回后再进来用）
+  const eb=document.getElementById('exp-excel-body');
+  const ab=document.getElementById('exp-api-body');
+  if(eb) eb.style.display=v==='excel'?'':'none';
+  if(ab) ab.style.display=v==='api'?'':'none';
+}
+
+// ===== 备注内联编辑 =====
+function openRemarkEdit(uid, el) {
+  const c = customers.find(x => x.uid === uid);
+  if (!c) return;
+  const cell = el.parentNode;
+  const cur = c.remark || '';
+  cell.innerHTML = `<input id="remark-input-${uid}" type="text" value="${cur.replace(/"/g,'&quot;')}"
+    style="width:100%;font-size:12px;border:1px solid #18a058;border-radius:5px;padding:3px 6px;outline:none;color:#1a1a1a;box-sizing:border-box;"
+    maxlength="80" placeholder="填写备注…">`;
+  const inp = document.getElementById('remark-input-' + uid);
+  inp.focus();
+  inp.select();
+  const save = () => {
+    c.remark = inp.value.trim();
+    renderList();
+  };
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); save(); }
+    if (e.key === 'Escape') { renderList(); }
+  });
+}
+
+// ===== 线索数详情弹窗 =====
+function openLeadsDetail(uid){
+  const c = customers.find(x=>x.uid===uid);
+  if(!c) return;
+  const exist = document.getElementById('leadsDetailModal');
+  if(exist) exist.remove();
+
+  // 模拟该用户的历史留资记录
+  const mockRecords = [
+    { time:'2026-05-06 18:12', type:'私信留资', phone:'125****1012', wx:'wxid_abc', remark:'咨询价格' },
+    { time:'2026-05-04 10:30', type:'广告表单', phone:'125****1012', wx:'—', remark:'对比竞品' },
+    { time:'2026-05-01 09:15', type:'私信留资', phone:'125****1012', wx:'wxid_abc', remark:'首次咨询' },
+  ].slice(0, c.leads || 1);
+
+  const modal = document.createElement('div');
+  modal.id = 'leadsDetailModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:800;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+  <div style="background:#fff;border-radius:14px;width:520px;box-shadow:0 16px 48px rgba(0,0,0,.15);overflow:hidden;" onclick="event.stopPropagation()">
+    <div style="padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f0f0f0;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#1a1a1a;">${c.name}</div>
+          <div style="font-size:12px;color:#aaa;margin-top:2px;">共 ${c.leads} 次留资记录</div>
+        </div>
+        <button onclick="document.getElementById('leadsDetailModal').remove();openDetail('${c.uid}')"
+          style="font-size:12px;padding:5px 14px;border-radius:7px;border:1px solid #e5e7eb;background:#fff;color:#555;cursor:pointer;white-space:nowrap;">查看详情</button>
+      </div>
+      <button onclick="document.getElementById('leadsDetailModal').remove()" style="color:#aaa;font-size:20px;line-height:1;background:none;border:none;cursor:pointer;flex-shrink:0;">×</button>
+    </div>
+    <div style="padding:8px 24px 20px;max-height:400px;overflow-y:auto;">
+      ${mockRecords.map((r,i)=>`
+      <div style="padding:16px 0;${i<mockRecords.length-1?'border-bottom:1px solid #f5f5f5;':''}">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:600;color:#1a1a1a;">${r.type}</span>
+          <span style="font-size:12px;color:#aaa;">${r.time}</span>
+        </div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <svg style="width:13px;height:13px;color:#aaa;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            <span style="font-size:13px;color:#333;">${r.phone}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <svg style="width:13px;height:13px;color:#aaa;flex-shrink:0;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span style="font-size:13px;color:#333;">微信：${r.wx}</span>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', ()=>modal.remove());
+}
+
+function goToFilter(){
+  // 关闭弹窗，滚到筛选栏，高亮重置按钮提示用户筛选
+  document.getElementById('exportModal').remove();
+  const filterBar = document.querySelector('#datePickerWrap');
+  if(filterBar) filterBar.scrollIntoView({behavior:'smooth',block:'center'});
+  // 筛选完后，给用户一个提示 toast
+  setTimeout(()=>toast('筛选完成后，点击「导出数据」→ 选择「当前筛选结果」即可导出'), 400);
+}
+
+// 「去筛选」+ 筛选结果全选快捷入口
+function selectAllVisible(){
+  const visibleUids = Array.from(document.querySelectorAll('[data-uid]')).map(el=>el.dataset.uid);
+  visibleUids.forEach(uid=>selectedRows.add(uid));
+  renderList();
+  const ca=document.getElementById('checkAll'); if(ca) ca.checked=true;
+  toast(`已勾选当前 ${visibleUids.length} 条数据`);
+}
+
+function selectExportRange(v){
+  _expRange=v;
+  ['all','sel'].forEach(k=>{
+    const wrap=document.getElementById('exp-range-'+k);
+    const dot=document.getElementById('exp-rdot-'+k);
+    if(k===v){
+      wrap.style.borderColor='#1a1a1a';
+      dot.style.borderColor='#1a1a1a';dot.style.background='#1a1a1a';
+      dot.innerHTML='<div style="width:5px;height:5px;border-radius:50%;background:#fff;"></div>';
+    } else {
+      wrap.style.borderColor='#e5e7eb';
+      dot.style.borderColor='#d1d5db';dot.style.background='#fff';dot.innerHTML='';
+    }
+  });
+}
+
+let _tokenVisible=false;
+const _fakeToken='sk-xhs-leads-a8f2c3d9e1b4';
+function toggleApiToken(){
+  _tokenVisible=!_tokenVisible;
+  const el=document.getElementById('exp-token-val');
+  if(el) el.textContent=_tokenVisible?_fakeToken:'••••••••••••••';
+  // update button text
+  const btns=document.querySelectorAll('[onclick*="toggleApiToken"]');
+  btns.forEach(b=>b.textContent=_tokenVisible?'隐藏':'查看');
+}
+function copyApiToken(){
+  navigator.clipboard.writeText(_fakeToken).catch(()=>{});
+  toast('Token 已复制');
+}
+
+function toggleExportField(el){
+  el.classList.toggle('_exp-selected');
+  if(el.classList.contains('_exp-selected')){el.style.borderColor='#18a058';el.style.color='#18a058';el.style.background='#fff';}
+  else{el.style.borderColor='#e5e7eb';el.style.color='#888';el.style.background='#fff';}
+}
+function toggleAllExportFields(){
+  _expAllSelected=!_expAllSelected;
+  document.querySelectorAll('._exp-field-tag').forEach(el=>{
+    if(_expAllSelected){el.classList.add('_exp-selected');el.style.borderColor='#18a058';el.style.color='#18a058';el.style.background='#fff';}
+    else{el.classList.remove('_exp-selected');el.style.borderColor='#e5e7eb';el.style.color='#888';el.style.background='#fff';}
+  });
+  const tgl=document.getElementById('exp-field-toggle');
+  if(tgl) tgl.textContent=_expAllSelected?'取消全选':'全选';
+}
+function doExport(){
+  if(_expType==='api'){
+    const url=document.getElementById('exp-webhook-url').value.trim();
+    if(!url){toast('请填写 Post 消息接收地址');return;}
+    toast('配置已保存');document.getElementById('exportModal').remove();return;
+  }
+  const fields=Array.from(document.querySelectorAll('._exp-field-tag._exp-selected')).map(el=>el.dataset.field);
+  if(!fields.length){toast('请至少选择一个导出字段');return;}
+  const rangeText=_expRange==='sel'?`已勾选 ${selectedRows.size} 条`:'当前筛选全部数据';
+  toast(`导出任务已生成（${rangeText}），请稍后在「下载中心」查收`);
+  document.getElementById('exportModal').remove();
+}
+
+// ===== 筛选器 =====
+function toggleMoreFilter(btn) {
+  const row = document.getElementById('moreFilterRow');
+  const show = row.style.display === 'none';
+  row.style.display = show ? 'flex' : 'none';
+  btn.style.background = show ? '#f0fdf4' : '';
+  btn.style.borderColor = show ? '#bbf7d0' : '';
+  btn.style.color = show ? '#15803d' : '';
+}
+const activeChips = {}; // 保留变量防止旧引用报错，不再实际使用
+function onMoreFilterChange(name, val) { renderList(); }
+function removeChip(name) {}
+function renderFilterChips() {}
+function resetFilter() {
+  activeCard=null;
+  document.querySelectorAll('.stat-card').forEach(c=>c.classList.remove('active'));
+  _setResetHighlight(false);
+  document.getElementById('fs-behavior').value='';
+  document.getElementById('fs-tag').value='';
+  document.getElementById('fs-search').value='';
+  document.getElementById('fs-date-s').value='';
+  document.getElementById('fs-date-e').value='';
+  _calPickStart=null;_calPickEnd=null;
+  _updateDateTriggerLabel(null);
+  ['mf-convert','mf-account','mf-traffictype','mf-leadtype'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderList();
+}
+
+// ===== Skill 跳转弹窗 =====
+function openSkillToast(type) {
+  const exist = document.getElementById('skillToastModal');
+  if(exist) exist.remove();
+  const modal = document.createElement('div');
+  modal.id = 'skillToastModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:800;display:flex;align-items:flex-end;justify-content:center;padding-bottom:32px;';
+  modal.innerHTML = `<div style="background:#1a1a1a;color:#fff;border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 16px 40px rgba(0,0,0,.3);min-width:300px;">
+    <div style="width:32px;height:32px;background:#18a058;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg style="width:16px;height:16px;color:#fff;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    </div>
+    <div style="flex:1;"><div style="font-size:13px;font-weight:600;">跳转至${type} Skill</div><div style="font-size:11px;color:#888;margin-top:2px;">将在智能工具界面中打开</div></div>
+    <button onclick="this.closest('#skillToastModal').remove()" style="color:#555;cursor:pointer;font-size:18px;line-height:1;">×</button>
+  </div>`;
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+  setTimeout(()=>modal.remove(), 3000);
+}
+
+// ===== 详情侧边栏 =====
+function openDetail(uidOrName) {
+  const c = customers.find(x=>x.uid===uidOrName||x.name===uidOrName) || {};
+  const custName = c.name || uidOrName;
+  document.getElementById('detailMask').style.display='block';
+  document.getElementById('detailPanel').style.transform='translateX(0)';
+  document.getElementById('detailPanel').innerHTML = `
+    <div style="padding:16px 20px 0;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:15px;font-weight:700;color:#1a1a1a;">客户详情</div>
+      <button onclick="closeDetail()" style="color:#aaa;cursor:pointer;padding:4px;" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#aaa'"><svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <!-- Tab：基本信息 / 变更记录 -->
+    <div style="display:flex;border-bottom:1px solid #f0f0f0;margin-top:12px;">
+      <div id="dt-info" onclick="switchDetailTab('info')" style="flex:1;text-align:center;padding:10px 0;font-size:14px;cursor:pointer;border-bottom:2px solid #18a058;color:#18a058;font-weight:500;">基本信息</div>
+      <div id="dt-log" onclick="switchDetailTab('log')" style="flex:1;text-align:center;padding:10px 0;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;color:#888;">变更记录</div>
+    </div>
+    <!-- 基本信息 -->
+    <div id="dt-panel-info" style="flex:1;overflow-y:auto;padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:4px;padding-bottom:16px;border-bottom:1px solid #f5f5f5;">
+        <div style="width:44px;height:44px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#15803d;flex-shrink:0;">${c.name?c.name[0]:'?'}</div>
+        <div>
+          <div style="font-size:15px;font-weight:600;color:#1a1a1a;">${custName}</div>
+          <div style="font-size:12px;color:#aaa;margin-top:2px;">${c.phone||'125****1012'}</div>
+        </div>
+      </div>
+      ${[
+        ['小红书ID', c.xhsId||'95136576920'],
+        ['小红书uid', c.uid||'69fb07df000000002001002'],
+        ['用户行为', c.behavior||'进线、开口'],
+        ['手机号', c.phone||'—'],
+        ['微信号', c.wx||'—'],
+        ['名片', c.card||'—'],
+        ['交易卡唤端', c.tradeCard||'—'],
+        ['所属地域', c.region||'—'],
+        ['备注', c.remark||'—'],
+        ['接待客服', c.staff||'—'],
+        ['线索标签', c.tag||'—'],
+      ].map(([k,v])=>`<div style="display:flex;padding:12px 0;border-bottom:1px solid #f5f5f5;gap:12px;">
+        <span style="font-size:13px;color:#aaa;width:100px;flex-shrink:0;">${k}</span>
+        <span style="font-size:13px;color:#1a1a1a;flex:1;">${v}</span>
+      </div>`).join('')}
+    </div>
+    <!-- 变更记录 -->
+    <div id="dt-panel-log" style="display:none;flex:1;overflow-y:auto;padding:0 20px 16px;">
+      <!-- 表头 -->
+      <div style="display:grid;grid-template-columns:130px 80px 68px 1fr;gap:0 8px;padding:10px 0;border-bottom:2px solid #f0f0f0;font-size:12px;color:#aaa;font-weight:500;">
+        <span>时间</span><span>操作人</span><span>类型</span><span>操作内容</span>
+      </div>
+      ${(()=>{
+        const logs = {
+          '69fb07df000000002001002': [
+            ['2026-05-06 18:12:33','用户','更新字段','留资卡<br><span style="color:#999;font-size:11px;">1.【补充卡信息】由【】变更为【城市:武汉 / 姓名:王先生】</span>'],
+            ['2026-05-06 18:12:05','用户','留资','留资卡 <span style="color:#1677ff;cursor:pointer;">详情</span> ～<br><span style="color:#999;font-size:11px;">手机号码：125****1012</span>'],
+            ['2026-05-06 18:05:44','用户','留资','名片<br><span style="color:#999;font-size:11px;">已复制个微</span>'],
+            ['2026-05-06 18:05:29','用户','开口','对方已查看你的手机号'],
+            ['2026-05-06 17:20:11','用户','进线','用户进入会话'],
+            ['2026-05-06 17:20:09','系统','归因','进线归因：计划ID 183630346<br>单元ID 574218819<br>创意ID 4219856085<br><span style="color:#18a058;cursor:pointer;font-size:11px;">笔记链接: 点击查看</span>'],
+          ],
+          '671b4d0800000000...': [
+            ['2026-05-07 12:29:55','用户','留资','交易卡'],
+            ['2026-05-07 12:29:15','用户','留资','留资卡 <span style="color:#1677ff;cursor:pointer;">详情</span> ～<br><span style="color:#999;font-size:11px;">手机号码：+86 138****8888<br>微信号码：****</span>'],
+            ['2026-05-07 12:28:34','用户','开口','对方已查看你的手机号'],
+            ['2026-05-07 12:29:06','用户','进线','用户进入会话'],
+          ],
+          '5f10672b000000010101c362': [
+            ['2026-05-06 17:45:26','用户','更新字段','个微名片'],
+            ['2026-05-06 17:44:19','用户','留资','交易卡'],
+            ['2026-05-06 17:43:56','用户','留资','名片<br><span style="color:#999;font-size:11px;">已复制个微</span>'],
+            ['2026-05-06 17:43:20','用户','更新字段','留资卡<br><span style="color:#999;font-size:11px;">1.【补充卡信息】由【】变更为【城市:上海】</span>'],
+            ['2026-05-06 17:43:11','用户','留资','留资卡 <span style="color:#1677ff;cursor:pointer;">详情</span> ～<br><span style="color:#999;font-size:11px;">手机号码：+1 139****6666<br>微信号码：****</span>'],
+            ['2026-05-06 17:30:22','用户','开口','对方已查看你的手机号'],
+            ['2026-05-06 17:00:05','用户','进线','用户进入会话'],
+          ],
+          '667d3273000000001b018c69': [
+            ['2026-05-13 21:10:00','私信通','更新字段','私信留资<br><span style="color:#999;font-size:11px;">1.【标签】由【高潜成交】变更为【无意向】</span>'],
+            ['2026-05-13 20:53:50','私信通','留资','客服打标<br><span style="color:#999;font-size:11px;">地域：浙江<br>客服标记为"高潜成交"</span>'],
+            ['2026-05-01 09:00:11','用户','开口','对方已查看你的手机号'],
+            ['2026-05-01 08:37:42','用户','进线','用户进入会话'],
+          ],
+          '664fd9e0000000...': [
+            ['2026-05-13 14:32:36','用户','留资','留资卡 <span style="color:#1677ff;cursor:pointer;">详情</span> ～<br><span style="color:#999;font-size:11px;">手机号码：+86 137****5555</span>'],
+            ['2026-05-11 12:25:24','用户','留资','留资卡 <span style="color:#1677ff;cursor:pointer;">详情</span> ～<br><span style="color:#999;font-size:11px;">手机号码：+86 137****5555<br>微信号码：****</span>'],
+            ['2026-04-28 17:36:50','私信通','更新字段','客服打标<br><span style="color:#999;font-size:11px;">1.【标签】由【跟进中】变更为【留客资】</span>'],
+            ['2026-04-28 17:34:38','私信通','更新字段','私信留资<br><span style="color:#999;font-size:11px;">1.【标签】由【留客资】变更为【跟进中】</span>'],
+            ['2026-04-28 17:32:26','私信通','更新字段','客服打标<br><span style="color:#999;font-size:11px;">1.【标签】由【跟进中】变更为【留客资】</span>'],
+            ['2026-04-28 17:31:55','私信通','留资','私信留资 <span style="color:#1677ff;cursor:pointer;">详情</span><br><span style="color:#999;font-size:11px;">客服标记为"跟进中"</span>'],
+            ['2026-04-28 16:55:38','用户','留资','留资卡 <span style="color:#1677ff;cursor:pointer;">详情</span> ～<br><span style="color:#999;font-size:11px;">手机号码：+86 137****5555</span>'],
+            ['2026-04-12 16:53:43','用户','直播进线','用户进入直播间 03.10测试晚场'],
+            ['2026-04-06 16:54:03','用户','开口','对方已点击你的企业微信联系卡'],
+            ['2026-04-06 14:43:45','用户','直播进线','用户进入直播间 03.06一播'],
+          ],
+        };
+        const rows = logs[c.uid] || [
+          ['2026-05-08 09:55:12','用户','留资','留资卡 <span style="color:#1677ff;cursor:pointer;">详情</span> ～<br><span style="color:#999;font-size:11px;">手机号码：'+c.phone+'</span>'],
+          ['2026-05-08 09:30:05','用户','开口','对方已查看你的手机号'],
+          ['2026-05-08 09:12:33','用户','进线','用户进入会话'],
+        ];
+        return rows.map(([time,who,type,content])=>`<div style="display:grid;grid-template-columns:130px 80px 68px 1fr;gap:0 8px;padding:11px 0;border-bottom:1px solid #f5f5f5;font-size:12px;color:#555;align-items:start;">
+          <span style="color:#aaa;font-size:11px;line-height:1.6;white-space:nowrap;">${time}</span>
+          <span style="line-height:1.6;word-break:break-all;">${who}</span>
+          <span style="line-height:1.6;white-space:nowrap;">${type}</span>
+          <span style="color:#1a1a1a;line-height:1.6;">${content}</span>
+        </div>`).join('');
+      })()}
+    </div>
+  `;
+}
+function closeDetail() {
+  document.getElementById('detailMask').style.display='none';
+  document.getElementById('detailPanel').style.transform='translateX(100%)';
+}
+function switchDetailTab(tab) {
+  ['info','log'].forEach(t=>{
+    const tabEl = document.getElementById('dt-'+t);
+    const panelEl = document.getElementById('dt-panel-'+t);
+    if(tabEl){
+      tabEl.style.borderBottomColor = t===tab?'#18a058':'transparent';
+      tabEl.style.color = t===tab?'#18a058':'#888';
+      tabEl.style.fontWeight = t===tab?'500':'400';
+    }
+    if(panelEl) panelEl.style.display = t===tab?'block':'none';
+  });
+}
+
+// ===== 工具 =====
+function toast(msg) {
+  const el=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  el.style.display='flex'; clearTimeout(toast._t);
+  toast._t=setTimeout(()=>el.style.display='none',2400);
+}
+
+// ===== 初始化 =====
+renderList();
+</script>
+</body>
+</html>

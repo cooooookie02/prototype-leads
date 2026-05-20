@@ -773,21 +773,10 @@ function renderList() {
       const avatarBg = avatarColors[c.name[0]] || '#e5e7eb';
       const avatarFg = avatarBg==='#e5e7eb' ? '#6b7280' : '#374151';
       const isChecked = selectedRows.has(c.uid);
-      // 线索分级渲染（纯数字+颜色背景）
+      // 线索分级渲染（纯数字）
       const scoreStars = (score) => {
         if(!score) return '<span style="color:#d1d5db;font-size:12px;">—</span>';
-        const cfg = {
-          1:{bg:'#f3f4f6',color:'#9ca3af',label:'低'},
-          2:{bg:'#fef9c3',color:'#a16207',label:'较低'},
-          3:{bg:'#fef3c7',color:'#d97706',label:'中'},
-          4:{bg:'#ffedd5',color:'#ea580c',label:'较高'},
-          5:{bg:'#fee2e2',color:'#dc2626',label:'高'},
-        };
-        const c = cfg[score]||cfg[1];
-        return `<div style="display:inline-flex;align-items:center;gap:4px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${c.bg};font-size:12px;font-weight:700;color:${c.color};">${score}</span>
-          <span style="font-size:11px;color:${c.color};">${c.label}</span>
-        </div>`;
+        return `<span style="font-size:13px;font-weight:600;color:#1a1a1a;">${score}</span>`;
       };
       return `<div class="table-row" style="display:grid;grid-template-columns:36px 1.6fr 1.5fr 1fr 1.3fr 1.3fr 1.3fr 0.8fr 2fr 0.9fr 1fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;min-width:2000px;${isChecked?'background:#f0fdf4;':''}" id="row-${c.uid}">
         <div style="display:flex;align-items:center;justify-content:center;">

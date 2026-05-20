@@ -333,6 +333,10 @@
           <option value="">全部流量类型</option>
           <option>广告流量</option><option>自然流量</option>
         </select>
+        <select class="filter-select" id="mf-leadsource" onchange="renderList()">
+          <option value="">全部线索来源</option>
+          <option>笔记</option><option>直播间</option>
+        </select>
         <select class="filter-select" id="mf-leadtype" onchange="renderList()">
           <option value="">全部留资方式</option>
           <option>私信留资</option><option>客服打标</option><option>留资卡</option><option>企微名片</option><option>落地页</option><option>预约组件</option><option>个微名片</option><option>交易卡</option><option>落地页_直播间</option>
@@ -740,8 +744,9 @@ function syncCheckAll() {
 }
 
 function renderList() {
-  const _fTraffic  = (document.getElementById('mf-traffictype')||{}).value||'';
-  const _fLeadType = (document.getElementById('mf-leadtype')||{}).value||'';
+  const _fTraffic    = (document.getElementById('mf-traffictype')||{}).value||'';
+  const _fLeadSource = (document.getElementById('mf-leadsource')||{}).value||'';
+  const _fLeadType   = (document.getElementById('mf-leadtype')||{}).value||'';
   const _fConvert  = (document.getElementById('mf-convert')||{}).value||'';
   const _fAccount  = (document.getElementById('mf-account')||{}).value||'';
   const _fSearch   = ((document.getElementById('fs-search')||{}).value||'').trim();
@@ -753,7 +758,8 @@ function renderList() {
       ? customers.filter(c => c.tag === ['开口客户','潜在客户','留资客户','转化客户'][activeCard])
       : customers;
 
-  if (_fTraffic)  list = list.filter(c => (c.trafficType||'') === _fTraffic);
+  if (_fTraffic)    list = list.filter(c => (c.trafficType||'') === _fTraffic);
+  if (_fLeadSource) list = list.filter(c => (c.leadSource||'').startsWith(_fLeadSource));
   if (_fLeadType) list = list.filter(c => (c.leadType||'') === _fLeadType);
   if (_fConvert)  list = list.filter(c => (c.convert||'') === _fConvert);
   if (_fAccount)  list = list.filter(c => (c.account||'') === _fAccount);
@@ -2171,7 +2177,7 @@ function openExportPanel() {
             <span onclick="toggleAllExportFields()" style="color:#18a058;cursor:pointer;" id="exp-field-toggle">取消全选</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;" id="exp-fields">
-            ${['用户昵称','用户ID','归属账号','最新进线时间','最近开口时间','最近留资时间','转化结果','电话','微信','留资方式','客户标签'].map(f=>`<div class="_exp-field-tag _exp-selected" data-field="${f}" onclick="toggleExportField(this)" style="font-size:12px;padding:4px 10px;border-radius:20px;border:1.5px solid #18a058;background:#fff;color:#18a058;cursor:pointer;">${f}</div>`).join('')}
+            ${['用户昵称','用户ID','归属账号','最新进线时间','最近开口时间','最近留资时间','留资次数','客户画像','线索分级','流量类型','线索来源','客户标签','转化结果','电话','微信','留资方式'].map(f=>`<div class="_exp-field-tag _exp-selected" data-field="${f}" onclick="toggleExportField(this)" style="font-size:12px;padding:4px 10px;border-radius:20px;border:1.5px solid #18a058;background:#fff;color:#18a058;cursor:pointer;">${f}</div>`).join('')}
           </div>
         </div>
       </div>
@@ -2446,7 +2452,7 @@ function resetFilter() {
   document.getElementById('fs-date-e').value='';
   _calPickStart=null;_calPickEnd=null;
   _updateDateTriggerLabel(null);
-  ['mf-convert','mf-account','mf-traffictype','mf-leadtype'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['mf-convert','mf-account','mf-traffictype','mf-leadsource','mf-leadtype'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderList();
 }
 

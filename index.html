@@ -333,10 +333,6 @@
           <option value="">全部流量类型</option>
           <option>广告流量</option><option>自然流量</option>
         </select>
-        <select class="filter-select" id="mf-leadsource" onchange="renderList()">
-          <option value="">全部线索来源</option>
-          <option>笔记</option><option>直播间</option>
-        </select>
         <select class="filter-select" id="mf-leadtype" onchange="renderList()">
           <option value="">全部留资方式</option>
           <option>私信留资</option><option>客服打标</option><option>留资卡</option><option>企微名片</option><option>落地页</option><option>预约组件</option><option>个微名片</option><option>交易卡</option><option>落地页_直播间</option>
@@ -346,12 +342,12 @@
 
     <!-- 客户列表 -->
     <div style="background:#fff;border-radius:10px;overflow:hidden;">
-      <div style="overflow-x:auto;"><div style="min-width:2200px;">
-      <div class="table-header" style="grid-template-columns:36px 1.6fr 1.5fr 1fr 1.3fr 1.3fr 1.3fr 0.8fr 2fr 0.9fr 1fr 1.8fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;">
+      <div style="overflow-x:auto;"><div style="min-width:2000px;">
+      <div class="table-header" style="grid-template-columns:36px 1.6fr 1.5fr 1fr 1.4fr 1.2fr 1.3fr 1.3fr 0.8fr 1fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;">
         <div style="display:flex;align-items:center;justify-content:center;">
           <input type="checkbox" id="checkAll" onchange="toggleCheckAll(this.checked)" style="width:14px;height:14px;cursor:pointer;accent-color:#1a1a1a;">
         </div>
-        <div>用户昵称</div><div>用户ID</div><div>归属账号</div><div>最新进线时间</div><div>最近开口时间</div><div>最近留资时间</div><div>留资次数</div><div>客户画像</div><div>线索分级</div><div>流量类型</div><div>线索来源</div><div>客户标签</div><div>转化结果</div><div>电话</div><div>微信</div><div>留资方式</div><div>备注</div><div>操作</div>
+        <div>用户昵称</div><div>用户ID</div><div>归属账号</div><div>互动类型</div><div>最新互动时间</div><div>最新进线时间</div><div>最近开口时间</div><div>最近留资时间</div><div>留资次数</div><div>流量类型</div><div>客户标签</div><div>转化结果</div><div>电话</div><div>微信</div><div>留资方式</div><div>备注</div><div>操作</div>
       </div>
       <div id="custList"></div>
       </div></div>
@@ -707,15 +703,15 @@ let customTags = [
 function allTags() { return [...SYS_TAGS, ...customTags]; }
 
 const customers = [
-  { name:'小红书69FB24AC',  phone:'125****1012', uid:'69fb07df000000002001002', account:'薯店-小红书', enterTime:'2026-05-06 17:20', openTime:'2026-05-06 18:05', leadTime:'2026-05-06 18:12', tag:'开口客户', tagColor:'green', wx:'wxid_abc', leadType:'私信留资', trafficType:'广告流量', leadSource:'笔记：小红书考研全程规划指南', convert:'', leads:3, remark:'对价格很感兴趣，周五回访', featureTags:['高潜成交'], persona:'客户可能处于决策对比期，目标明确且价格敏感，近期有较强成交意愿…', leadScore:4 },
-  { name:'小红书671C9221',  phone:'138****8888', uid:'671b4d0800000000...', account:'薯店-小红书', enterTime:'2026-05-07 12:29', openTime:'—', leadTime:'—', tag:'潜在客户', tagColor:'blue', wx:'—', leadType:'客服打标', trafficType:'自然流量', leadSource:'', convert:'', leads:1, remark:'', featureTags:[], persona:'当前处于信息收集阶段，需求意识已被激活，尚未进入主动咨询…', leadScore:2 },
-  { name:'绿索在夜理',      phone:'139****6666', uid:'5f10672b000000010101c362', account:'薯店-广告', enterTime:'2026-05-06 17:00', openTime:'2026-05-06 17:30', leadTime:'2026-05-06 17:45', tag:'留资客户', tagColor:'purple', wx:'green_night', leadType:'落地页', trafficType:'广告流量', leadSource:'直播间：5月冲刺班限时报名直播', convert:'', leads:2, remark:'已发方案，等待回复', featureTags:['高潜成交'], persona:'客户可能属于目标导向型，决策周期较短，已完成留资等待跟进回复…', leadScore:4 },
-  { name:'麦克善',          phone:'186****9999', uid:'667d3273000000001b018c69', account:'薯店-小红书', enterTime:'2026-05-01 08:37', openTime:'2026-05-01 09:00', leadTime:'—', tag:'开口客户', tagColor:'green', wx:'—', leadType:'私信留资', trafficType:'自然流量', leadSource:'', convert:'', leads:1, remark:'', featureTags:[], persona:'客户偏好主动咨询，已有初步接触但留资意愿尚不明确，需进一步跟进…', leadScore:2 },
-  { name:'我看你像1012个人', phone:'137****5555', uid:'664fd9e0000000...', account:'薯店-广告', enterTime:'2026-05-07 11:45', openTime:'—', leadTime:'—', tag:'流失客户', tagColor:'gray', wx:'—', leadType:'—', trafficType:'广告流量', leadSource:'直播间：暑期集训营招生专场', convert:'', leads:0, remark:'', featureTags:[], persona:'决策周期较长，对当前方案持观望态度，超7天无互动存在流失风险…', leadScore:1 },
-  { name:'小红书671BBF8F',  phone:'—',          uid:'671b499900000000e00b577', account:'薯店-小红书', enterTime:'2026-05-07 11:06', openTime:'2026-05-07 11:20', leadTime:'2026-05-07 11:35', tag:'潜在客户', tagColor:'blue', wx:'wxid_xdf', leadType:'留资卡', trafficType:'自然流量', leadSource:'', convert:'', leads:4, remark:'', featureTags:[], persona:'客户可能对产品感兴趣但尚在比较阶段，多次留资显示一定意向强度…', leadScore:3 },
-  { name:'灰白',            phone:'—',          uid:'5f8fdd9e0000000...', account:'薯店-小红书', enterTime:'2026-05-03 01:17', openTime:'2026-05-03 01:40', leadTime:'—', tag:'流失客户', tagColor:'gray', wx:'—', leadType:'私信留资', trafficType:'自然流量', leadSource:'', convert:'', leads:1, remark:'', featureTags:[], persona:'客户可能为冲动型浏览，深夜进线后互动冷淡，后续响应意愿较低…', leadScore:1 },
-  { name:'小红书671AA2F1',  phone:'131****7788', uid:'671aa2f1000000...', account:'薯店-广告', enterTime:'2026-05-08 09:12', openTime:'2026-05-08 09:30', leadTime:'2026-05-08 09:55', tag:'转化客户', tagColor:'orange', wx:'wxid_conv1', leadType:'落地页', trafficType:'广告流量', leadSource:'直播间：名师公开课免费试听专场', convert:'预约', leads:5, remark:'5月16日到店', featureTags:[], persona:'目标分数明确，冲分意愿强烈，已完成预约到店，成交确定性高…', leadScore:5 },
-  { name:'陈小姐',          phone:'150****3344', uid:'cc1234560000000...', account:'薯店-小红书', enterTime:'2026-05-07 14:00', openTime:'2026-05-07 14:22', leadTime:'2026-05-07 14:30', tag:'高意向未成交', tagColor:'purple', wx:'chen_lady', leadType:'企微名片', trafficType:'自然流量', leadSource:'', convert:'', leads:2, remark:'', featureTags:['高意向未成交'], persona:'有明确需求背景，目标清晰，近期活跃度高，对课程方案感兴趣…', leadScore:4 },
+  { name:'小红书69FB24AC',  phone:'125****1012', uid:'69fb07df000000002001002', account:'薯店-小红书', interactTypes:['评论','关注'], interactTime:'2026-05-06 17:18', enterTime:'2026-05-06 17:20', openTime:'2026-05-06 18:05', leadTime:'2026-05-06 18:12', tag:'开口客户', tagColor:'green', wx:'wxid_abc', leadType:'私信留资', trafficType:'广告流量', convert:'', leads:3, remark:'对价格很感兴趣，周五回访', featureTags:['高潜成交'] },
+  { name:'小红书671C9221',  phone:'138****8888', uid:'671b4d0800000000...', account:'薯店-小红书', interactTypes:['关注'], interactTime:'2026-05-07 12:15', enterTime:'2026-05-07 12:29', openTime:'—', leadTime:'—', tag:'潜在客户', tagColor:'blue', wx:'—', leadType:'客服打标', trafficType:'自然流量', convert:'', leads:1, remark:'', featureTags:[] },
+  { name:'绿索在夜理',      phone:'139****6666', uid:'5f10672b000000010101c362', account:'薯店-广告', interactTypes:['评论'], interactTime:'2026-05-06 16:52', enterTime:'2026-05-06 17:00', openTime:'2026-05-06 17:30', leadTime:'2026-05-06 17:45', tag:'留资客户', tagColor:'purple', wx:'green_night', leadType:'落地页', trafficType:'广告流量', convert:'', leads:2, remark:'已发方案，等待回复', featureTags:['高潜成交'] },
+  { name:'麦克善',          phone:'186****9999', uid:'667d3273000000001b018c69', account:'薯店-小红书', interactTypes:[], interactTime:'', enterTime:'2026-05-01 08:37', openTime:'2026-05-01 09:00', leadTime:'—', tag:'开口客户', tagColor:'green', wx:'—', leadType:'私信留资', trafficType:'自然流量', convert:'', leads:1, remark:'', featureTags:[] },
+  { name:'我看你像1012个人', phone:'137****5555', uid:'664fd9e0000000...', account:'薯店-广告', interactTypes:['评论','关注'], interactTime:'2026-05-07 11:30', enterTime:'2026-05-07 11:45', openTime:'—', leadTime:'—', tag:'流失客户', tagColor:'gray', wx:'—', leadType:'—', trafficType:'广告流量', convert:'', leads:0, remark:'', featureTags:[] },
+  { name:'小红书671BBF8F',  phone:'—',          uid:'671b499900000000e00b577', account:'薯店-小红书', interactTypes:['评论'], interactTime:'2026-05-07 10:58', enterTime:'2026-05-07 11:06', openTime:'2026-05-07 11:20', leadTime:'2026-05-07 11:35', tag:'潜在客户', tagColor:'blue', wx:'wxid_xdf', leadType:'留资卡', trafficType:'自然流量', convert:'', leads:4, remark:'', featureTags:[] },
+  { name:'灰白',            phone:'—',          uid:'5f8fdd9e0000000...', account:'薯店-小红书', interactTypes:[], interactTime:'', enterTime:'2026-05-03 01:17', openTime:'2026-05-03 01:40', leadTime:'—', tag:'流失客户', tagColor:'gray', wx:'—', leadType:'私信留资', trafficType:'自然流量', convert:'', leads:1, remark:'', featureTags:[] },
+  { name:'小红书671AA2F1',  phone:'131****7788', uid:'671aa2f1000000...', account:'薯店-广告', interactTypes:['关注'], interactTime:'2026-05-08 09:03', enterTime:'2026-05-08 09:12', openTime:'2026-05-08 09:30', leadTime:'2026-05-08 09:55', tag:'转化客户', tagColor:'orange', wx:'wxid_conv1', leadType:'落地页', trafficType:'广告流量', convert:'预约', leads:5, remark:'5月16日到店', featureTags:[] },
+  { name:'陈小姐',          phone:'150****3344', uid:'cc1234560000000...', account:'薯店-小红书', interactTypes:['评论','关注'], interactTime:'2026-05-07 13:44', enterTime:'2026-05-07 14:00', openTime:'2026-05-07 14:22', leadTime:'2026-05-07 14:30', tag:'高意向未成交', tagColor:'purple', wx:'chen_lady', leadType:'企微名片', trafficType:'自然流量', convert:'', leads:2, remark:'', featureTags:['高意向未成交'] },
 ];
 
 let activeCard = null;
@@ -744,9 +740,8 @@ function syncCheckAll() {
 }
 
 function renderList() {
-  const _fTraffic    = (document.getElementById('mf-traffictype')||{}).value||'';
-  const _fLeadSource = (document.getElementById('mf-leadsource')||{}).value||'';
-  const _fLeadType   = (document.getElementById('mf-leadtype')||{}).value||'';
+  const _fTraffic  = (document.getElementById('mf-traffictype')||{}).value||'';
+  const _fLeadType = (document.getElementById('mf-leadtype')||{}).value||'';
   const _fConvert  = (document.getElementById('mf-convert')||{}).value||'';
   const _fAccount  = (document.getElementById('mf-account')||{}).value||'';
   const _fSearch   = ((document.getElementById('fs-search')||{}).value||'').trim();
@@ -758,8 +753,7 @@ function renderList() {
       ? customers.filter(c => c.tag === ['开口客户','潜在客户','留资客户','转化客户'][activeCard])
       : customers;
 
-  if (_fTraffic)    list = list.filter(c => (c.trafficType||'') === _fTraffic);
-  if (_fLeadSource) list = list.filter(c => (c.leadSource||'').startsWith(_fLeadSource));
+  if (_fTraffic)  list = list.filter(c => (c.trafficType||'') === _fTraffic);
   if (_fLeadType) list = list.filter(c => (c.leadType||'') === _fLeadType);
   if (_fConvert)  list = list.filter(c => (c.convert||'') === _fConvert);
   if (_fAccount)  list = list.filter(c => (c.account||'') === _fAccount);
@@ -779,12 +773,7 @@ function renderList() {
       const avatarBg = avatarColors[c.name[0]] || '#e5e7eb';
       const avatarFg = avatarBg==='#e5e7eb' ? '#6b7280' : '#374151';
       const isChecked = selectedRows.has(c.uid);
-      // 线索分级渲染（纯数字）
-      const scoreStars = (score) => {
-        if(!score) return '<span style="color:#d1d5db;font-size:12px;">—</span>';
-        return `<span style="font-size:13px;font-weight:600;color:#1a1a1a;">${score}</span>`;
-      };
-      return `<div class="table-row" style="display:grid;grid-template-columns:36px 1.6fr 1.5fr 1fr 1.3fr 1.3fr 1.3fr 0.8fr 2fr 0.9fr 1fr 1.8fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;min-width:2200px;${isChecked?'background:#f0fdf4;':''}" id="row-${c.uid}">
+      return `<div class="table-row" style="display:grid;grid-template-columns:36px 1.6fr 1.5fr 1fr 1.4fr 1.2fr 1.3fr 1.3fr 0.8fr 1fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;min-width:1800px;${isChecked?'background:#f0fdf4;':''}" id="row-${c.uid}">
         <div style="display:flex;align-items:center;justify-content:center;">
           <input type="checkbox" data-uid="${c.uid}" ${isChecked?'checked':''} onchange="toggleRowCheck(this)" style="width:14px;height:14px;cursor:pointer;accent-color:#1a1a1a;">
         </div>
@@ -794,6 +783,8 @@ function renderList() {
         </div>
         <div style="font-size:11px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.uid}</div>
         <div style="font-size:12px;color:#555;">${c.account}</div>
+        <div>${(c.interactTypes||[]).map(t=>`<span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:11px;color:#4b5563;white-space:nowrap;">${t}</span>`).join('<span style="width:4px;display:inline-block;"></span>')|| '<span style="color:#ccc;">—</span>'}</div>
+        <div style="font-size:11px;color:#555;">${c.interactTime||'—'}</div>
         <div style="font-size:11px;color:#555;">${c.enterTime}</div>
         <div style="font-size:11px;color:#555;">${c.openTime}</div>
         <div style="font-size:11px;color:#555;">${c.leadTime}</div>
@@ -802,10 +793,7 @@ function renderList() {
             ? `<span onclick="openLeadsDetail('${c.uid}')" style="color:#1a1a1a;cursor:pointer;font-weight:700;">${c.leads}</span>`
             : `<span style="color:#ccc;">—</span>`}
         </div>
-        <div style="font-size:11px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:4px;" title="${c.persona||''}">${c.persona ? `<span style="color:#6b7280;">${c.persona}</span>` : '<span style="color:#d1d5db;">—</span>'}</div>
-        <div>${scoreStars(c.leadScore)}</div>
         <div style="font-size:12px;color:#555;">${c.trafficType||'—'}</div>
-        <div style="font-size:11px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.leadSource||''}">${c.leadSource||'—'}</div>
         <div>${(()=>{
   // 阶段系统标签：c.tag 命中的那个（只显示一个）
   const stageTag = allTags().find(t=>t.tagType==='stage' && t.name===c.tag);
@@ -2177,7 +2165,7 @@ function openExportPanel() {
             <span onclick="toggleAllExportFields()" style="color:#18a058;cursor:pointer;" id="exp-field-toggle">取消全选</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;" id="exp-fields">
-            ${['用户昵称','用户ID','归属账号','最新进线时间','最近开口时间','最近留资时间','留资次数','客户画像','线索分级','流量类型','线索来源','客户标签','转化结果','电话','微信','留资方式'].map(f=>`<div class="_exp-field-tag _exp-selected" data-field="${f}" onclick="toggleExportField(this)" style="font-size:12px;padding:4px 10px;border-radius:20px;border:1.5px solid #18a058;background:#fff;color:#18a058;cursor:pointer;">${f}</div>`).join('')}
+            ${['用户昵称','用户ID','归属账号','最新进线时间','最近开口时间','最近留资时间','转化结果','电话','微信','留资方式','客户标签'].map(f=>`<div class="_exp-field-tag _exp-selected" data-field="${f}" onclick="toggleExportField(this)" style="font-size:12px;padding:4px 10px;border-radius:20px;border:1.5px solid #18a058;background:#fff;color:#18a058;cursor:pointer;">${f}</div>`).join('')}
           </div>
         </div>
       </div>
@@ -2452,7 +2440,7 @@ function resetFilter() {
   document.getElementById('fs-date-e').value='';
   _calPickStart=null;_calPickEnd=null;
   _updateDateTriggerLabel(null);
-  ['mf-convert','mf-account','mf-traffictype','mf-leadsource','mf-leadtype'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['mf-convert','mf-account','mf-traffictype','mf-leadtype'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderList();
 }
 
@@ -2511,6 +2499,7 @@ function openDetail(uidOrName) {
         ['所属地域', c.region||'—'],
         ['备注', c.remark||'—'],
         ['接待客服', c.staff||'—'],
+        ['线索标签', c.tag||'—'],
       ].map(([k,v])=>`<div style="display:flex;padding:12px 0;border-bottom:1px solid #f5f5f5;gap:12px;">
         <span style="font-size:13px;color:#aaa;width:100px;flex-shrink:0;">${k}</span>
         <span style="font-size:13px;color:#1a1a1a;flex:1;">${v}</span>

@@ -774,7 +774,7 @@ function renderList() {
       const avatarBg = avatarColors[c.name[0]] || '#e5e7eb';
       const avatarFg = avatarBg==='#e5e7eb' ? '#6b7280' : '#374151';
       const isChecked = selectedRows.has(c.uid);
-      return `<div class="table-row" style="display:grid;grid-template-columns:36px 1.6fr 1.5fr 1fr 1.4fr 1.2fr 1.3fr 1.3fr 0.8fr 1fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;min-width:1800px;${isChecked?'background:#f0fdf4;':''}" id="row-${c.uid}">
+      return `<div class="table-row" style="display:grid;grid-template-columns:36px 1.6fr 1.5fr 1fr 1.4fr 1.2fr 1.3fr 1.3fr 0.8fr 1fr 1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.3fr 1.1fr;min-width:2000px;${isChecked?'background:#f0fdf4;':''}" id="row-${c.uid}">
         <div style="display:flex;align-items:center;justify-content:center;">
           <input type="checkbox" data-uid="${c.uid}" ${isChecked?'checked':''} onchange="toggleRowCheck(this)" style="width:14px;height:14px;cursor:pointer;accent-color:#1a1a1a;">
         </div>

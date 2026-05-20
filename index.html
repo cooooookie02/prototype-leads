@@ -306,6 +306,11 @@
           <option>进线客户</option><option>开口客户</option><option>潜在客户</option><option>留资客户</option><option>流失客户</option><option>转化客户</option>
           <option>高意向未成交</option><option>KOS转介绍</option><option>已到店</option><option>VIP客户</option>
         </select>
+        <!-- 流量类型 -->
+        <select class="filter-select" id="mf-traffictype" onchange="renderList()">
+          <option value="">全部流量类型</option>
+          <option>广告流量</option><option>自然流量</option>
+        </select>
         <!-- 搜索框 -->
         <input class="filter-input" id="fs-search" placeholder="搜索客户名称/手机号/ID" style="max-width:210px;">
         <!-- 更多筛选 -->
@@ -328,10 +333,6 @@
         <select class="filter-select" id="mf-account" onchange="renderList()">
           <option value="">全部归属账号</option>
           <option>薯店-小红书</option><option>薯店-广告</option>
-        </select>
-        <select class="filter-select" id="mf-traffictype" onchange="renderList()">
-          <option value="">全部流量类型</option>
-          <option>广告流量</option><option>自然流量</option>
         </select>
         <select class="filter-select" id="mf-leadtype" onchange="renderList()">
           <option value="">全部留资方式</option>
